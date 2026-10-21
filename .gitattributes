@@ -1,0 +1,5 @@
+# Normalize line endings to LF in the repository; git detects binary files automatically.
+* text=auto eol=lf
+
+# Test fixtures are stored byte-for-byte as-is.
+frontend/tests/playwright-files/** -text
