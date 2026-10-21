@@ -1,45 +1,58 @@
 <template>
   <div class="sidebar-links card">
-
-    <!-- Links section header -->
-    <div class="sidebar-links-header"
-      :class="{ 'with-top-spacing': isShare && !disableShareCard }">
-      <i :class="{ 'disabled': !isLoggedIn }"
-        aria-label="Navigate Home"
-        @click="goHome()" class="material-symbols action">home</i>
-      <span
-        class="sidebar-mode-toggle-wrap item"
-        @mouseenter="showTooltip($event, $t('sidebar.switchMode'))"
-        @mouseleave="hideTooltip"
+    <!-- Folders: scrollable tree rooted at the current source (Drive's "My Drive" section). -->
+    <div class="sidebar-tree-section">
+      <div class="nav-section-label">
+        <span>{{ $t("general.folders") }}</span>
+      </div>
+      <!-- Source switcher only when multiple sources (hidden in shares) -->
+      <div
+        v-if="!isShare && sourceNames.length > 1"
+        class="source-card-container"
+        ref="sourceCardContainer"
       >
-        <ToggleSwitch
-          class="sidebar-mode-toggle"
-          variant="neutral"
-          :model-value="mode === 'navigation'"
-          off-icon="format_list_bulleted"
-          on-icon="link"
-          :name="$t('general.links')"
-          :aria-label="$t('sidebar.switchMode')"
-          @update:model-value="onSidebarModeToggle"
+        <ExpandDropdown
+          class="sidebar-source-switcher"
+          :model-value="activeSource"
+          :options="sourceDropdownOptions"
+          :aria-label="$t('general.source')"
+          @update:model-value="navigateToSource"
         />
-      </span>
-      <i v-if="isShare" aria-label="Edit Share" @mouseenter="showTooltip($event, editShareText)" @mouseleave="hideTooltip"
-        :class="{ 'disabled': !canEdit }"
-        @click="showEditShareHover" class="material-symbols action">edit</i>
-      <i v-else @mouseenter="showTooltip($event, $t('sidebar.customizeLinks'))" @mouseleave="hideTooltip"
-        aria-label="Edit Links"
-        @click="openSidebarLinksPrompt" class="material-symbols action">edit</i>
+      </div>
+      <router-link v-if="showTreeRoot" :to="treeRootTo" class="tree-root" :class="{ active: isAtTreeRoot }"
+        :title="treeRootLabel">
+        <svg v-if="!isShare" class="realtime-pulse" :class="treeRootStatusClass">
+          <circle class="center" cx="50%" cy="50%" r="7px"></circle>
+          <circle class="pulse" cx="50%" cy="50%" r="10px"></circle>
+        </svg>
+        <i v-else class="material-symbols tree-root__icon">folder_shared</i>
+        <span>{{ treeRootLabel }}</span>
+      </router-link>
+      <FileTree
+        :currentPath="currentPath"
+        :currentSource="currentSource"
+        class="file-tree-container"
+      />
     </div>
-    <!-- Scrollable Content Area -->
-    <div class="sidebar-links-content">
-      <!-- Links Mode -->
-      <template v-if="mode === 'links'">
+
+    <!-- Links: pinned to the bottom of the sidebar, above the footer. -->
+    <div class="sidebar-links-section">
+      <div class="nav-section-label">
+        <span>{{ $t("general.links") }}</span>
+        <button v-if="isShare" type="button" aria-label="Edit Share" class="nav-section-action"
+          :disabled="!canEdit"
+          @mouseenter="showTooltip($event, editShareText)" @mouseleave="hideTooltip"
+          @click="showEditShareHover"><i class="material-symbols">edit</i></button>
+        <button v-else type="button" aria-label="Edit Links" class="nav-section-action"
+          @mouseenter="showTooltip($event, $t('sidebar.customizeLinks'))" @mouseleave="hideTooltip"
+          @click="openSidebarLinksPrompt"><i class="material-symbols">edit</i></button>
+      </div>
         <!-- Share Info section - shown when viewing a share -->
         <div v-if="isShare && !disableShareCard" class="share-info-section">
           <ShareInfo :hash="hash" :token="token" :sub-path="subPath" />
         </div>
         <transition-group name="expand" tag="div" class="inner-card">
-          <template v-for="(link, index) in sidebarLinksToDisplay" :key="`link-${index}-${link.category}`">
+          <template v-for="(link, index) in orderedSidebarLinks" :key="`link-${index}-${link.category}`">
             <!-- Divider: renders as hr line or text label -->
             <div v-if="link.category === 'divider'" class="sidebar-divider-container">
               <hr v-if="!link.name || link.name.toLowerCase() === 'divider'" class="sidebar-divider" />
@@ -128,29 +141,6 @@
             </a>
           </template>
         </transition-group>
-      </template>
-      <!-- Navigation Mode -->
-      <template v-else>
-        <!-- Source switcher only when multiple sources (hidden in shares) -->
-        <div
-          v-if="!isShare && sourceNames.length > 1"
-          class="source-card-container"
-          ref="sourceCardContainer"
-        >
-          <ExpandDropdown
-            class="sidebar-source-switcher"
-            :model-value="activeSource"
-            :options="sourceDropdownOptions"
-            :aria-label="$t('general.source')"
-            @update:model-value="navigateToSource"
-          />
-        </div>
-        <FileTree
-          :currentPath="currentPath"
-          :currentSource="currentSource"
-          class="file-tree-container"
-        />
-      </template>
     </div>
   </div>
 </template>
@@ -178,7 +168,6 @@ import { showShareDownloadPrompt } from "@/utils/download.js";
 import ShareInfo from "@/components/files/ShareInfo.vue";
 import FileTree from '@/components/files/FileTree.vue';
 import ExpandDropdown from "@/components/settings/ExpandDropdown.vue";
-import ToggleSwitch from "@/components/settings/ToggleSwitch.vue";
 export default {
   name: "SidebarLinks",
   components: {
@@ -187,7 +176,6 @@ export default {
     ShareInfo,
     FileTree,
     ExpandDropdown,
-    ToggleSwitch,
   },
   data() {
     return {
@@ -246,6 +234,41 @@ export default {
     subPath() {
       return state.shareInfo?.path || "/";
     },
+    /** Storage sources go last so their usage meter sits at the bottom (Drive); order within each group is kept. */
+    orderedSidebarLinks() {
+      const links = this.sidebarLinksToDisplay;
+      return [
+        ...links.filter((link) => !this.isSourceCategory(link.category)),
+        ...links.filter((link) => this.isSourceCategory(link.category)),
+      ];
+    },
+    showTreeRoot() {
+      return this.isShare || this.sourceNames.length <= 1;
+    },
+    treeRootLabel() {
+      if (this.isShare) {
+        return state.shareInfo?.title || this.$t("general.home");
+      }
+      return this.currentSource || this.$t("general.home");
+    },
+    treeRootTo() {
+      if (this.isShare) {
+        return getters.sharePathBase();
+      }
+      return `/files/${encodeURIComponent(this.currentSource || "")}/`;
+    },
+    isAtTreeRoot() {
+      return getters.currentView() === "listingView" && (this.currentPath === "/" || this.currentPath === "");
+    },
+    treeRootStatusClass() {
+      const status = this.sourceInfo[this.currentSource]?.status;
+      return {
+        active: this.realtimeActive,
+        ready: status === "ready",
+        warning: status === "indexing",
+        danger: status !== "ready" && status !== "indexing",
+      };
+    },
     sidebarLinksToDisplay() {
       // If viewing a share, use share's links
       if (getters.isShare() && state.shareInfo?.sidebarLinks?.length > 0) {
@@ -261,9 +284,6 @@ export default {
     // List all source names for the dropdown menu
     sourceNames() {
       return Object.keys(state.sources.info || {});
-    },
-    mode() {
-      return getters.sidebarMode();
     },
     // Build a map from source name to its custom link (if any)
     sourceLinkMap() {
@@ -639,9 +659,6 @@ export default {
         console.error("Failed to open edit share dialog:", err);
       }
     },
-    onSidebarModeToggle(isNavigation) {
-      mutations.setSidebarMode(isNavigation ? "navigation" : "links");
-    },
     navigateToSource(sourceName) {
       if (!sourceName || sourceName === this.activeSource) {
         return;
@@ -656,138 +673,272 @@ export default {
 .sidebar-links {
   display: flex;
   flex-direction: column;
-  height: 100%;
-  padding: 1em;
-  overflow: auto;
-}
-
-.sidebar-links-header {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  padding: 0;
-  flex-shrink: 0;
-}
-
-.sidebar-links-header .material-symbols.action {
-  padding: 0.25em;
-  border-radius: 0.5em;
-  transition: background 0.2s;
-}
-
-.sidebar-links-header .material-symbols.action:hover {
-  background: var(--surfaceSecondary);
-}
-
-.sidebar-links-header .sidebar-mode-toggle-wrap {
-  flex: 1;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  align-self: center;
-  min-width: 0;
-  max-width: 100%;
-  margin: 0 0.25em;
-}
-
-.sidebar-links-header :deep(.sidebar-mode-toggle) {
-  width: auto;
-}
-
-.sidebar-links-header :deep(.sidebar-mode-toggle .toggle-row--icon-mode) {
-  width: auto;
-}
-
-.sidebar-links-content {
-  flex: 1;
-  overflow: auto;
+  flex: 1 1 auto;
   min-height: 0;
-  margin-top: 0.5em;
+  padding: 0;
+  overflow: hidden;
+  background: transparent;
+  box-shadow: none;
+}
+
+/* Tree takes the free height and scrolls; links stay pinned underneath. */
+.sidebar-tree-section {
+  flex: 1 1 auto;
+  min-height: 0;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding-bottom: 8px;
+}
+
+.sidebar-links-section {
+  flex: 0 0 auto;
+  max-height: 45%;
+  overflow: auto;
+  scrollbar-width: thin;
+  padding: 8px 0;
+  border-top: 1px solid var(--divider);
+}
+
+.tree-root {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  height: 32px;
+  padding: 0 12px 0 8px;
+  border-radius: var(--radius-full);
+  color: var(--textPrimary);
+  font-size: 14px;
+  font-weight: 600;
+  text-decoration: none;
+  transition: background-color 0.1s ease;
+}
+
+.tree-root span {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.tree-root:hover {
+  background: var(--state-hover);
+}
+
+.tree-root.active {
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+}
+
+.tree-root__icon {
+  font-size: 20px;
+  color: var(--folder-color);
+}
+
+.nav-section-label {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  height: 32px;
+  padding: 0 4px 0 16px;
+  color: var(--textSecondary);
+  font-family: var(--font-display);
+  font-size: 12px;
+  font-weight: 500;
+  letter-spacing: 0.02em;
+}
+
+.nav-section-action {
+  width: 32px;
+  height: 32px;
+  min-width: 32px;
+  min-height: 32px;
+  padding: 0;
+  border-radius: var(--radius-full);
+  background: transparent;
+  color: var(--textSecondary);
+  cursor: pointer;
+  opacity: 0;
+  transition: opacity 0.15s ease, background-color 0.15s ease;
+}
+
+.nav-section-action:hover {
+  background: var(--state-hover);
+}
+
+.nav-section-action:focus-visible,
+.sidebar-links-section:hover .nav-section-action {
+  opacity: 1;
+}
+
+.nav-section-action .material-symbols {
+  font-size: 18px;
 }
 
 .file-tree-container {
   margin-top: 0;
 }
 
-.no-edit-options {
-  justify-content: center !important;
-}
-
 .share-info-section {
-  margin-top: 0 !important;
-  margin-bottom: 0.5em;
-  padding-bottom: 0.25em;
+  margin: 0 0 8px;
+  padding-bottom: 8px;
   border-bottom: 1px solid var(--divider);
-}
-
-.vue-simple-progress {
-  margin-top: 0 !important;
-}
-
-.usage-info .vue-simple-progress {
-  border: var(--borderWidth) solid var(--surfaceSecondary);
-  border-radius: var(--borderRadius) !important;
 }
 
 .sidebar-links .inner-card {
   display: flex;
-  justify-content: center;
-  align-items: center;
   flex-direction: column;
+  align-items: stretch;
   width: 100%;
+  gap: 2px;
 }
 
-/* Non-source link styles (tools, custom) */
-.sidebar-link-button {
+/* Nav rows: flat pill, soft accent when active (Drive / M3 navigation drawer). */
+.sidebar-link-button,
+.source-button {
+  display: block;
+  width: 100%;
+  max-width: 100%;
   margin: 0;
-  margin-top: 0.25em;
-  padding-left: 0.5em;
-  padding-right: 0.5em;
-  border-radius: 0.5em;
-  justify-content: flex-start;
-  max-width: 98%;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  font-weight: 400;
+  background: transparent;
+  box-shadow: none !important;
+  color: var(--textPrimary);
+  text-decoration: none;
+  cursor: pointer;
+  transition: background-color 0.15s ease;
 }
 
-.sidebar-link-button:first-child {
-  margin-top: 0 !important;
+.sidebar-link-button:hover {
+  background: var(--state-hover);
+  transform: none !important;
 }
 
 .sidebar-link-button.active {
-  background: var(--alt-background);
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+  font-weight: 600;
 }
 
-/* Make anchor tags behave like buttons */
-a.source-button,
-a.sidebar-link-button {
-  text-decoration: none;
-  cursor: pointer;
+/* Source rows: the pill is the 36px row only; the usage meter sits under it, unhighlighted. */
+.source-button {
+  padding: 0;
+  background: transparent !important;
 }
 
-.link-container {
+.source-button:hover {
+  transform: none !important;
+}
+
+.link-container,
+.source-container {
   display: flex;
   flex-direction: row;
-  color: var(--textPrimary);
-  align-content: center;
   align-items: center;
-  gap: 0.5em;
-  min-height: 2.75em;
+  gap: 12px;
+  min-height: 36px;
+  color: var(--textPrimary);
+  font-size: 14px;
 }
 
-.link-icon {
-  color: var(--primaryColor);
+.source-container {
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  transition: background-color 0.15s ease;
 }
 
-/* Warning icon for inaccessible sources */
+.source-button:hover .source-container {
+  background: var(--state-hover);
+}
+
+.source-button.active .source-container {
+  background: var(--accent-container);
+  font-weight: 600;
+}
+
+.source-container span,
+.link-container span {
+  flex: 1;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.link-icon,
+.source-container > i:first-child {
+  width: 20px;
+  flex: 0 0 20px;
+  padding: 0 !important;
+  font-size: 20px;
+  color: var(--textSecondary);
+}
+
+.active .link-icon,
+.active .source-container > i:first-child {
+  color: var(--on-accent-container);
+}
+
 .source-button.disabled {
   opacity: 0.5;
   cursor: not-allowed;
   pointer-events: none;
 }
 
-.source-button.disabled:hover {
-  background: var(--hoverOverlay);
-  box-shadow: none !important;
+.sidebar-link-button.active .link-container,
+.source-button.active .source-container {
+  color: var(--on-accent-container);
+}
+
+/* Usage meter: thin track with the label underneath, aligned with the row label. */
+.usage-info {
+  padding: 4px 16px 8px 48px;
+}
+
+.usage-info :deep(.vue-simple-progress) {
+  height: 4px !important;
+  min-height: 4px !important;
+  margin: 0 0 22px !important;
+  border: 0 !important;
+  border-radius: var(--radius-full) !important;
+  background: var(--divider) !important;
+  overflow: visible !important;
+}
+
+.usage-info :deep(.vue-simple-progress-bar) {
+  height: 4px !important;
+  border-radius: var(--radius-full) !important;
+}
+
+.usage-info :deep(.vue-simple-progress-bar:not(.vue-simple-progress-bar-background)) {
+  background: var(--accent) !important;
+}
+
+/* ProgressBar centres its label on the bar with inline top:50% + translateY(-50%);
+   in the sidebar the label sits under the 4px track instead, independent of font size. */
+.usage-info :deep(.vue-simple-progress-text) {
+  inset: 100% auto auto 0 !important;
+  width: auto !important;
+  margin-top: 4px;
+  padding: 0 !important;
   transform: none !important;
+  line-height: 16px;
+  color: var(--textSecondary) !important;
+  font-size: 12px !important;
+  text-align: left !important;
+  white-space: nowrap;
+}
+
+.tooltip-info-icon {
+  font-size: 16px;
+  color: var(--textSecondary);
+  opacity: 0;
+  transition: opacity 0.15s ease;
+}
+
+.source-button:hover .tooltip-info-icon {
+  opacity: 1;
 }
 
 .expand-enter-active,
@@ -803,38 +954,54 @@ a.sidebar-link-button {
   opacity: 0;
 }
 
-.source-button {
-  display: block;
+/* Source status: small dot instead of the large pulse. */
+.realtime-pulse {
+  width: 20px;
+  height: 20px;
+  flex: 0 0 20px;
+  margin: 0;
 }
 
-.source-button.active {
-  background: var(--alt-background);
+.realtime-pulse > .center {
+  r: 4px;
 }
 
-.realtime-pulse>.pulse {
+.realtime-pulse > .pulse {
   display: none;
   fill-opacity: 0;
   transform-origin: 50% 50%;
   animation: pulse 10s infinite backwards;
 }
 
-.realtime-pulse.active>.pulse {
+.realtime-pulse.active > .pulse {
   display: block;
 }
 
-.realtime-pulse.ready>.pulse {
-  fill: #21d721;
-  stroke: #21d721;
+.realtime-pulse.ready > .pulse {
+  fill: #1e8e3e;
+  stroke: #1e8e3e;
 }
 
-.realtime-pulse.danger>.pulse {
+.realtime-pulse.danger > .pulse {
   fill: rgb(190 147 147);
-  stroke: rgb(235 55 55);
+  stroke: #d93025;
 }
 
-.realtime-pulse.warning>.pulse {
-  fill: rgb(255 157 0);
-  stroke: rgb(255 157 0);
+.realtime-pulse.warning > .pulse {
+  fill: #f9ab00;
+  stroke: #f9ab00;
+}
+
+.realtime-pulse.ready > .center {
+  fill: #1e8e3e;
+}
+
+.realtime-pulse.danger > .center {
+  fill: #d93025;
+}
+
+.realtime-pulse.warning > .center {
+  fill: #f9ab00;
 }
 
 @keyframes pulse {
@@ -843,6 +1010,7 @@ a.sidebar-link-button {
     stroke-opacity: 1;
     transform: scale(0.3);
   }
+
   to {
     stroke-width: 0;
     stroke-opacity: 0;
@@ -850,81 +1018,35 @@ a.sidebar-link-button {
   }
 }
 
-.source-container {
-  display: flex;
-  flex-direction: row;
-  color: var(--textPrimary);
-  align-content: center;
-  align-items: center;
-  min-height: 3em;
-}
-
-.disabled .source-container {
-  display: block;
-}
-
-.source-container.has-usage-info {
-  min-height: 2.5em;
-}
-
-.realtime-pulse {
-  width: 2em;
-  height: 2em;
-  margin: 0.25em;
-}
-
-.realtime-pulse.ready>.center {
-  fill: #21d721;
-}
-
-.realtime-pulse.danger>.center {
-  fill: rgb(235 55 55);
-}
-
-.realtime-pulse.warning>.center {
-  fill: rgb(255 157 0);
-}
-
-.edit-share-button {
-  margin-top: 0.5em;
-  border-top: 1px solid var(--surfaceSecondary);
-  padding-top: 0.5em;
-}
-
-.edit-share-button .link-icon {
-  color: var(--primaryColor);
-}
-
 .source-card-container {
   position: relative;
-  margin-bottom: 0;
-  padding-bottom: 0;
-  border-bottom: 1px solid var(--divider);
+  margin: 0 0 4px;
+  padding: 0 8px;
 }
 
 .sidebar-source-switcher {
-  margin-top: 0;
-  margin-bottom: 0.5em;
+  margin: 0;
 }
 
 .sidebar-divider-container {
   width: 100%;
-  margin-top: 0.5em;
+  margin: 8px 0;
 }
 
 .sidebar-divider {
-  width: 50%;
+  width: 100%;
+  margin: 0;
   border: none;
-  border-top: 0.1em solid var(--divider);
+  border-top: 1px solid var(--divider);
 }
 
 .sidebar-divider-text {
   display: flex;
-  font-size: .85em;
-  color: var(--textSecondary);
-  letter-spacing: .05em;
-  place-content: center center;
   align-items: center;
+  height: 32px;
+  padding-left: 16px;
+  color: var(--textSecondary);
+  font-size: 12px;
+  font-weight: 500;
 }
-
 </style>

@@ -1,61 +1,13 @@
 <template>
-  <div class="card headline-card">
-    <div v-if="isDataLoaded && shouldShowLogin" class="card-wrapper user-card" :class="{ 'extra-padding': !disableQuickToggles }">
-      <div v-if="settingsAllowed" class="inner-card user-card__profile">
-        <a href="/settings#profile-main" class="person-button action button"
-          @click.prevent="navigateTo('/settings', '#profile-main')"
-          @mouseenter="showTooltip($event, $t('index.settingsHover'))" @mouseleave="hideTooltip">
-          <i class="material-symbols person-button__icon">person</i>
-          <span class="person-button__name">{{ user.username }}</span>
-          <i aria-label="settings" class="material-symbols person-button__icon">settings</i>
-        </a>
-      </div>
-      <div v-else-if="user.username === 'anonymous' && shouldShowLogin" @click="navigateToLogin"
-        class="inner-card user-card__profile">
-        <button type="button" class="person-button action button" aria-label="Login">
-          <i class="material-symbols-outlined">login</i> {{ $t("general.login") }}
-        </button>
-      </div>
-      <div v-else-if="user.username !== 'anonymous'" class="inner-card user-card__profile">
-        <button class="person-button action button" type="button">
-          <i class="material-symbols person-button__icon">person</i>
-          <span class="person-button__name">{{ user.username }}</span>
-        </button>
-      </div>
-
-      <div class="inner-card" v-if="canLogout" @click="logout">
-        <button type="button" aria-label="logout-button" class="logout-button action button"
-          @mouseenter="showTooltip($event, $t('general.logout'))" @mouseleave="hideTooltip">
-          <i class="material-symbols">exit_to_app</i>
-        </button>
-      </div>
-    </div>
-
-    <div v-if="!disableQuickToggles" class="card-wrapper" @mouseleave="hideTooltip">
-      <div class="quick-toggles" :class="{ 'extra-padding': hasCreateOptions }">
-        <div class="clickable" :class="{ active: user?.singleClick }" @click="toggleClick"
-          @mouseenter="showTooltip($event, $t('index.toggleClick'))" @mouseleave="hideTooltip" v-if="!isInvalidShare">
-          <i class="material-symbols">ads_click</i>
-        </div>
-        <div aria-label="Toggle Theme" v-if="darkModeTogglePossible" class="clickable"
-          :class="{ active: user?.darkMode }" @click="toggleDarkMode"
-          @mouseenter="showTooltip($event, $t('index.toggleDark'))" @mouseleave="hideTooltip">
-          <i class="material-symbols">dark_mode</i>
-        </div>
-        <div class="clickable" :class="{ active: isStickySidebar }" @click="toggleSticky"
-          @mouseenter="showTooltip($event, $t('index.toggleSticky'))" @mouseleave="hideTooltip" v-if="!isMobile">
-          <i class="material-symbols">push_pin</i>
-        </div>
-      </div>
-    </div>
-
-    <!-- Sidebar file actions -->
+  <div class="sidebar-top">
+    <!-- Drive-style primary action: opens the create menu anchored under the button. -->
     <transition v-if="shareInfo.shareType !== 'upload'" name="expand" @before-enter="beforeEnter" @enter="enter"
       @leave="leave">
-      <div v-if="!hideSidebarFileActions && isListingView" class="card-wrapper">
-        <button type="button" @click="openContextMenu" aria-label="File-Actions" data-testid="file-actions-button" class="action file-actions">
+      <div v-if="!hideSidebarFileActions && isListingView" class="new-button-wrap">
+        <button type="button" @click="openContextMenu" aria-label="File-Actions" data-testid="file-actions-button"
+          class="new-button" ref="newButton" :title="$t('sidebar.fileActions')">
           <i class="material-symbols">add</i>
-          {{ $t("sidebar.fileActions") }}
+          <span>{{ $t("general.new", { suffix: "" }) }}</span>
         </button>
       </div>
     </transition>
@@ -65,9 +17,26 @@
          style="display: none;"
          :data-hidden="hideSidebarFileActions">
     </div>
+
+    <!-- Shares have no app-bar account menu, so keep their quick controls here. -->
+    <div v-if="isShare && isDataLoaded && !disableQuickToggles" class="share-controls" @mouseleave="hideTooltip">
+      <button v-if="user.username === 'anonymous' && shouldShowLogin" type="button" class="share-control"
+        aria-label="Login" @click="navigateToLogin">
+        <i class="material-symbols">login</i>
+        <span>{{ $t("general.login") }}</span>
+      </button>
+      <button v-else-if="canLogout" type="button" class="share-control" aria-label="logout-button" @click="logout">
+        <i class="material-symbols">logout</i>
+        <span>{{ $t("general.logout") }}</span>
+      </button>
+      <button v-if="darkModeTogglePossible" type="button" class="share-control share-control--icon"
+        aria-label="Toggle Theme" :class="{ active: user?.darkMode }" @click="toggleDarkMode"
+        @mouseenter="showTooltip($event, $t('index.toggleDark'))">
+        <i class="material-symbols">dark_mode</i>
+      </button>
+    </div>
   </div>
 
-  <!-- Sidebar Links Component (replaces sources) -->
   <SidebarLinks />
 </template>
 
@@ -118,7 +87,7 @@ export default {
     isStickySidebar: () => getters.isStickySidebar(),
     isMobile: () => getters.isMobile(),
     isInvalidShare: () => getters.isInvalidShare(),
-    isListingView: () => getters.currentView() === "listingView",
+    isListingView: () => getters.shellView() === "listingView",
     user: () => (state.user || {username: 'anonymous'}),
     isShare: () => getters.isShare(),
     active: () => getters.isSidebarVisible(),
@@ -149,12 +118,12 @@ export default {
   methods: {
     openContextMenu() {
       mutations.resetSelected();
+      const rect = this.$refs.newButton?.getBoundingClientRect();
       mutations.showPrompt({
         name: "ContextMenu",
-        props: {
-          showCentered: true,
-          createOnly: true,
-        },
+        props: rect && !this.isMobile
+          ? { createOnly: true, posX: rect.left, posY: rect.bottom + 4 }
+          : { showCentered: true, createOnly: true },
       });
     },
     checkLogin() {
@@ -241,127 +210,92 @@ export default {
 </script>
 
 <style>
+.sidebar-top {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 8px;
+}
 
-.user-card {
-  flex-direction: row !important;
-  justify-content: space-between !important;
+.new-button-wrap {
+  padding: 4px 0 8px;
+}
+
+.new-button {
+  display: inline-flex;
   align-items: center;
-  width: 100%;
+  gap: 8px;
+  height: 44px;
+  padding: 0 18px 0 12px;
+  border: 0;
+  border-radius: var(--radius-m);
+  background: var(--surfacePrimary);
   color: var(--textPrimary);
+  box-shadow: var(--elevation-1);
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, background-color 0.15s ease;
 }
 
-.user-card > .user-card__profile {
-  flex: 1 1 0;
-  min-width: 0;
+.dark-mode .new-button {
+  background: var(--surfaceSecondary);
 }
 
-.quick-toggles {
+.new-button:hover {
+  box-shadow: var(--elevation-2);
+  background: color-mix(in srgb, var(--surfacePrimary) 92%, var(--accent));
+}
+
+.dark-mode .new-button:hover {
+  background: color-mix(in srgb, var(--surfaceSecondary) 88%, var(--accent));
+}
+
+.new-button .material-symbols {
+  padding: 0;
+  font-size: 22px;
+}
+
+.share-controls {
   display: flex;
-  justify-content: space-evenly;
-  width: 100%;
+  align-items: center;
+  gap: 8px;
+  padding: 0 4px;
+}
+
+.share-control {
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  height: 36px;
+  padding: 0 16px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  border: 1px solid var(--divider);
   color: var(--textPrimary);
-}
-
-.quick-toggles button {
-  border-radius: 10em;
-  cursor: pointer;
-  flex: none;
-}
-
-.sources {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  padding: 1em;
-}
-
-.inner-card {
-  display: flex;
-  align-items: center;
-  padding: 0 !important;
-}
-
-.sources .inner-card {
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  flex-direction: column;
-  width: 100%;
-}
-
-.quick-toggles div {
-  border-radius: 10em;
-  background-color: var(--surfaceSecondary);
-  transform: translateZ(0);
-}
-
-.file-actions i {
-  padding: 0 !important;
-}
-
-.quick-toggles div i {
-  font-size: 2em;
-  padding: 0.25em;
-  border-radius: 10em;
+  font: inherit;
   cursor: pointer;
 }
 
-button.action {
-  border-radius: 0.5em;
+.share-control:hover {
+  background: var(--state-hover);
 }
 
-.quick-toggles .active {
-  background-color: var(--primaryColor) !important;
-  border-radius: 10em;
-  color: white;
-}
-
-.card-wrapper {
-  display: flex !important;
-  flex-direction: column;
-  justify-content: center;
-  align-items: center;
-  padding: 0 !important;
-  border-radius: var(--borderRadius);
-}
-
-.headline-card {
-  padding: 1em;
-}
-
-.person-button {
-  min-width: 0;
-  width: 100%;
-  box-sizing: border-box;
-  display: flex;
-  padding-right: 0;
-  justify-content: flex-start;
-  align-items: center;
-  gap: 0.3em;
-}
-
-.person-button__icon {
-  flex-shrink: 0;
-}
-
-.person-button__name {
-  min-width: 0;
-  flex: 1 1 0;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-}
-
-.file-actions {
-  padding: 0.25em !important;
-  margin-top: 0.5em !important;
-  display: flex !important;
-  align-items: center;
+.share-control--icon {
+  width: 36px;
+  padding: 0;
   justify-content: center;
 }
 
-.extra-padding {
-  padding-bottom: 0.5em !important;
+.share-control.active {
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+  border-color: transparent;
+}
+
+.share-control .material-symbols {
+  font-size: 20px;
 }
 </style>

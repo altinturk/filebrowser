@@ -502,25 +502,40 @@ export default {
 <style >
 
 .password-entry .input {
-  margin-bottom: 0.5em;
+  min-height: 52px;
+  margin-bottom: 16px;
+  font-size: 16px;
 }
 
 .login-card {
-  padding: 1em;
+  padding: 36px 40px 32px;
+  border-radius: var(--radius-xl);
+  box-shadow: none;
+}
+
+.dark-mode .login-card {
+  background: var(--surfacePrimary);
 }
 
 .login-brand {
-  padding: 0;
-  padding-top: 0.5em;
   display: flex;
+  flex-direction: column;
   place-content: center center;
   align-items: center;
+  padding: 0;
 }
 
 .brand-text {
-  padding: 1em;
-  padding-top: 0.9em;
+  padding: 16px 0 24px;
   color: var(--textPrimary);
+  font-family: var(--font-display);
+  font-size: 24px;
+  font-weight: 400;
+}
+
+.brand-text h3 {
+  margin: 0;
+  font: inherit;
 }
 
 .login-brand i {
@@ -530,8 +545,8 @@ export default {
 }
 
 .login-icon {
-  width: 5em;
-  height: 5em;
+  width: 56px;
+  height: 56px;
   object-fit: contain;
 }
 
@@ -575,9 +590,10 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  padding: .5em;
-  background: var(--red);
-  color: #fff;
+  padding: 8px 12px;
+  border-radius: var(--radius-s);
+  background: color-mix(in srgb, var(--red) 12%, transparent);
+  color: var(--red);
   text-align: center;
   animation: .2s opac forwards;
   margin-bottom: 0.5em;
@@ -630,8 +646,8 @@ export default {
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  max-width: 16em;
-  width: 90%;
+  max-width: 420px;
+  width: 92%;
 }
 
 #login.recaptcha form {

@@ -1,5 +1,5 @@
 <template>
-  <div id="status-bar" :style="moveWithSidebar" :class="{ 'active': showStatusBar }" @contextmenu.prevent.stop @touchstart.stop @touchend.stop>
+  <div id="status-bar" :style="moveWithSidebar" :class="{ 'active': showStatusBar, 'in-card': inCard }" @contextmenu.prevent.stop @touchstart.stop @touchend.stop>
     <div class="status-content" @contextmenu.prevent.stop @touchstart.stop @touchend.stop>
       <!-- Left side: selection/directory info and stats for the editor and markdown viewer -->
       <div class="status-info">
@@ -135,7 +135,13 @@ export default {
 
       return `${parts.join(' | ')} ${sizeText}`;
     },
+    inCard() {
+      return getters.shellView() === "listingView" && !getters.isMobile();
+    },
     moveWithSidebar() {
+      if (this.inCard && !(getters.isStickySidebar() && getters.isSidebarVisible())) {
+        return { left: "16px" };
+      }
       if (getters.isStickySidebar() && getters.isSidebarVisible()) {
         return {
           left: `${state.sidebar.width}em`,
@@ -275,9 +281,12 @@ export default {
 }
 
 .button {
-  padding: 0 0.5em;
-  font-size: 0.9em;
-  font-weight: bold;
+  min-width: 20px;
+  min-height: 20px;
+  height: 20px;
+  padding: 0 6px;
+  font-size: 11px;
+  font-weight: 600;
   cursor: unset;
 }
 
@@ -302,6 +311,26 @@ export default {
 input[type="range"] {
   accent-color: var(--primaryColor);
   width: 8em;
+}
+
+/* Listing view: the bar is the footer of the content card. */
+#status-bar.in-card {
+  right: 16px;
+  height: 36px;
+  bottom: -36px;
+  border-top: 1px solid var(--divider);
+  border-radius: 0 0 var(--radius-l) var(--radius-l);
+  background: var(--surfacePrimary);
+  backdrop-filter: none;
+}
+
+#status-bar.in-card.active {
+  bottom: 16px;
+}
+
+#status-bar.in-card .status-content {
+  padding: 0 24px;
+  font-size: 12px;
 }
 
 /* Mobile styles */

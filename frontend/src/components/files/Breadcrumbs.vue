@@ -1,23 +1,24 @@
 <template>
-  <div v-if="items.length > 0" id="breadcrumbs">
+  <div id="breadcrumbs">
     <ul>
       <li>
-        <router-link :to="base" :aria-label="$t('general.home')" :title="$t('general.home')"
-          :class="{ 'droppable-breadcrumb': isDroppable, 'drag-over': dragOverItem?.type === 'home' }"
+        <router-link :to="base" :aria-label="$t('general.home')" :title="rootLabel"
+          :class="{ 'droppable-breadcrumb': isDroppable, 'drag-over': dragOverItem?.type === 'home', current: items.length === 0 }"
           @dragenter.prevent="dragEnter($event, homeLink)"
           @dragleave.prevent="dragLeave($event, homeLink)"
           @dragover.prevent="dragOver($event, homeLink)"
           @drop.prevent="drop($event, homeLink)">
-          <i class="material-symbols">home</i>
+          <span class="breadcrumb-text">{{ rootLabel }}</span>
         </router-link>
       </li>
       <li class="item" v-for="(link, index) in items" :key="index">
+        <i class="material-symbols breadcrumb-sep" aria-hidden="true">chevron_right</i> <!-- eslint-disable-line @intlify/vue-i18n/no-raw-text -->
         <router-link
           :to="link.url"
           :aria-label="`breadcrumb-link-${link.name}`"
           :title="link.name"
           :key="index"
-          :class="{ changeAvailable: hasUpdate,
+          :class="{ changeAvailable: hasUpdate, current: index === items.length - 1,
             'droppable-breadcrumb': isDroppable && link.type !== 'truncated',
             'drag-over': dragOverItem?.path === link.path, }"
           @dragenter="dragEnter($event, link)"
@@ -73,6 +74,12 @@ export default {
     },
     isDroppable() {
       return getters.sourcePermissions().modify
+    },
+    rootLabel() {
+      if (getters.isShare()) {
+        return state.shareInfo?.title || this.$t("general.home");
+      }
+      return state.req?.source || this.$t("general.home");
     },
     homeLink() {
       return {
@@ -325,113 +332,84 @@ export default {
 
 <style scoped>
 #breadcrumbs {
+  min-width: 0;
   overflow-x: auto;
   scrollbar-width: none;
 }
 
-/* Hide scrollbar for Chrome, Safari and Opera */
 #breadcrumbs::-webkit-scrollbar {
   display: none;
 }
 
-#breadcrumbs * {
-  box-sizing: unset;
-}
-
 #breadcrumbs ul {
   display: flex;
+  align-items: center;
   margin: 0;
   padding: 0;
-  margin-bottom: 0.5em;
+  list-style: none;
 }
 
 #breadcrumbs ul li {
-  display: inline-block;
+  display: inline-flex;
+  align-items: center;
+  min-width: 0;
   position: relative;
 }
 
 #breadcrumbs ul li a {
-  display: flex;
-  height: 0.85em;
-  background: var(--surfacePrimary);
-  text-align: center;
-  padding: 0.85em;
-  padding-right: 1.6em;
-  padding-left: 1.7em;
-  position: relative;
-  text-decoration: none;
-  color: var(--textPrimary);
-  border-radius: 0;
-  align-content: center;
+  display: inline-flex;
   align-items: center;
-  transition: background-color 0.2s ease, color 0.2s ease, padding-left 0.2s ease,
-    padding-right 0.2s ease, margin-right 0.2s ease, border-radius 0.2s ease, clip-path 0.2s ease;
+  height: 36px;
+  max-width: 40vw;
+  padding: 0 12px;
+  border-radius: var(--radius-full);
+  color: var(--textSecondary);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 28px;
+  white-space: nowrap;
+  text-decoration: none;
   user-select: none;
-  white-space: nowrap;
-  max-width: 90vw;
-  clip-path: polygon(
-    0% 0%,
-    calc(100% - 1.275em) 0%,
-    100% 50%,
-    calc(100% - 1.275em) 100%,
-    0% 100%,
-    1.275em 50%);
-  margin-right: -0.90em;
-  border: 1px solid rgb(0 0 0 / 10%);
+  transition: background-color 0.15s ease, color 0.15s ease;
 }
 
-#breadcrumbs ul li a .breadcrumb-text {
-  overflow: hidden;
-  text-overflow: ellipsis;
-  white-space: nowrap;
-  min-width: 0;
-}
-
-#breadcrumbs ul li:first-child a {
-  border-top-left-radius: 0.85em;
-  border-bottom-left-radius: 0.85em;
-  clip-path: polygon(
-    0% 0%,
-    calc(100% - 1.275em) 0%,
-    100% 50%,
-    calc(100% - 1.275em) 100%,
-    0% 100%);
-  padding-left: 1.1em;
-}
-
-#breadcrumbs ul li:last-child a {
-  padding-right: 1.275em;
-  border-top-right-radius: 0.85em;
-  border-bottom-right-radius: 0.85em;
-  clip-path: polygon(
-    0% 0%,
-    100% 0%,
-    100% 100%,
-    0% 100%,
-    1.275em 50%);
-  margin-right: 0;
+#breadcrumbs ul li a.current {
+  color: var(--textPrimary);
 }
 
 #breadcrumbs ul li a:hover {
-  background: var(--primaryColor);
-  color: white;
+  background: var(--state-hover);
+  color: var(--textPrimary);
 }
 
-#breadcrumbs ul li:last-child a.changeAvailable {
-  filter: contrast(0.8) hue-rotate(200deg) saturate(1);
+#breadcrumbs .breadcrumb-text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.breadcrumb-sep {
+  flex: 0 0 auto;
+  font-size: 24px;
+  color: var(--textSecondary);
+}
+
+#breadcrumbs ul li a.changeAvailable {
+  font-style: italic;
 }
 
 .drag-over {
-  background: var(--primaryColor) !important; /* Needs !important to make the hover effect work when dragging items */
-  color: white !important;
+  background: var(--accent-container) !important; /* Needs !important to make the hover effect work when dragging items */
+  color: var(--on-accent-container) !important;
   z-index: 2;
-  animation: breadcrumb-pulse 0.5s ease-in-out infinite;
 }
 
-@keyframes breadcrumb-pulse {
-  0% { transform: scale(1); }
-  50% { transform: scale(1.05); }
-  100% { transform: scale(1); }
+@media (width <= 768px) {
+  #breadcrumbs ul li a {
+    font-size: 18px;
+    padding: 0 8px;
+  }
 }
-
 </style>

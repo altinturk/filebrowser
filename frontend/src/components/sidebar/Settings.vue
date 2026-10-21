@@ -181,13 +181,16 @@ export default {
 };
 </script>
 <style>
+/* Settings navigation uses the same flat pill rows as the files sidebar. */
 .active-settings {
-  background: var(--primaryColor) !important;
-  color: white !important;
+  background: var(--accent-container) !important;
+  color: var(--on-accent-container) !important;
+  font-weight: 600;
 }
 
 .settings-icon {
-  font-size: 1.2em;
+  font-size: 20px;
+  color: inherit;
 }
 
 .active-settings .settings-icon,
@@ -199,13 +202,32 @@ export default {
   display: flex;
   align-items: center;
   overflow: unset !important;
-  padding: 1em;
+  padding: 0 16px;
+  min-height: 40px;
+}
+
+#sidebar .card.settings-card,
+#sidebar .card.settings-card-collapsible {
+  margin: 0 0 2px;
+  border-radius: var(--radius-full);
+  background: transparent;
+  box-shadow: none;
+  font-size: 14px;
+}
+
+/* The group wrapper is a plain container; each row inside gets its own pill. */
+#sidebar .card.settings-card-collapsible {
+  border-radius: 0;
+}
+
+#sidebar .card.settings-card:hover {
+  background: var(--state-hover);
 }
 
 .settings-item-content {
   display: flex;
   align-items: center;
-  gap: 0.5em;
+  gap: 12px;
 }
 </style>
 
@@ -218,7 +240,7 @@ export default {
 }
 
 .settings-card-collapsible--active {
-  outline: 2px solid var(--primaryColor);
+  outline: 0;
 }
 
 .settings-card-collapsible-chevron {
@@ -244,18 +266,20 @@ export default {
   overflow: hidden;
 }
 
-.settings-card-collapsible--expanded .settings-card-sub-item-inner {
-  border-top: 1px solid var(--divider);
-}
-
 .settings-card-collapsible-header,
 .settings-card-collapsible-sub-item,
 .settings-card-collapsible .active-settings {
-  margin: 0;
-  border-radius: 0;
+  margin: 0 0 2px;
+  border-radius: var(--radius-full);
 }
 
 .settings-card-collapsible-sub-item {
-  padding: 0.6em 1em 0.6em 2.25em;
+  min-height: 36px;
+  padding: 0 16px 0 44px;
+}
+
+.settings-card-collapsible-header:hover,
+.settings-card-collapsible-sub-item:hover {
+  background: var(--state-hover);
 }
 </style>

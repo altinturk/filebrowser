@@ -1,24 +1,25 @@
-/* `--background` is intentionally set here as a placeholder for stylelint */
+/* Base palette (Material 3 / Drive-style neutrals).
+   `--background` is intentionally set here as a placeholder for stylelint */
 :root {
-  --background: #f5f5f5;
-  --alt-background: #ddd;
-  --surfacePrimary: #ebebeb;
-  --surfaceSecondary: lightgray;
-  --textPrimary: #546e7a;
-  --textSecondary: gray;
-  --divider: rgb(176 176 176 / 50%);
-  --iconBackground: #ddd;
-  --activeWhiteIcon: gray;
+  --background: #f8fafd;
+  --alt-background: #f0f4f9;
+  --surfacePrimary: #fff;
+  --surfaceSecondary: #e9eef6;
+  --textPrimary: #1f1f1f;
+  --textSecondary: #444746;
+  --divider: #e1e3e1;
+  --iconBackground: #f0f4f9;
+  --activeWhiteIcon: #444746;
 }
 
 .dark-mode {
-  --background: #141D24;
-  --alt-background: #283136;
-  --surfacePrimary: #20292F;
-  --surfaceSecondary: #3A4147;
-  --divider: rgb(255 255 255 / 12%);
-  --textPrimary: rgb(255 255 255 / 87%);
-  --textSecondary: rgb(255 255 255 / 60%);
-  --iconBackground: #171718;
-  --activeWhiteIcon: white;
+  --background: #131314;
+  --alt-background: #1b1b1c;
+  --surfacePrimary: #1e1f20;
+  --surfaceSecondary: #282a2c;
+  --divider: #444746;
+  --textPrimary: #e3e3e3;
+  --textSecondary: #c4c7c5;
+  --iconBackground: #282a2c;
+  --activeWhiteIcon: #e3e3e3;
 }

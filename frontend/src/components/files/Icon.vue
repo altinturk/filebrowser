@@ -643,17 +643,17 @@ export default {
   color: var(--icon-green)
 }
 
-/* white variations */
+/* neutral variations: follow the theme so they stay visible without a tile behind them */
 .white-icons {
-  color: white;
+  color: var(--activeWhiteIcon);
 }
 
 .gray-icons {
-  color: var(--divider);
+  color: var(--textSecondary);
 }
 
 .lightgray-icons {
-  color: var(--light-gray)
+  color: color-mix(in srgb, var(--textSecondary) 70%, transparent);
 }
 
 #listingView.gallery .listing-item i.white-icons,

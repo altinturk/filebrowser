@@ -199,13 +199,6 @@ body.rtl .listing-items {
   border-color: var(--divider);
 }
 
-.listing-items.compact .listing-item:hover,
-.listing-items.list .listing-item:hover {
-  width: 98% !important;
-  margin-left: 1% !important;
-  padding-left: 0.5em !important;
-}
-
 /* Pin styles  */
 .pin-icon-wrapper {
   position: absolute;
@@ -266,12 +259,6 @@ body.rtl .listing-items {
   overflow: hidden;
   text-overflow: ellipsis;
   font-weight: 600;
-}
-
-.listing-items.compact :where(.lastGroup) .listing-item:last-child {
-  border-bottom: var(--borderWidth) solid var(--divider);
-  border-bottom-left-radius: var(--borderRadius);
-  border-bottom-right-radius: var(--borderRadius);
 }
 
 .listing-items.compact .listing-item div:last-of-type,
@@ -422,12 +409,6 @@ body.rtl .listing-items {
   display: none;
 }
 
-.listing-items.compact :where(.firstGroup) .listing-item:first-child {
-  border-top: var(--borderWidth) solid var(--divider);
-  border-top-left-radius: var(--borderRadius);
-  border-top-right-radius: var(--borderRadius);
-}
-
 /* =========== */
 /* List view   */
 /* =========== */
@@ -435,21 +416,6 @@ body.rtl .listing-items {
   flex-direction: column;
   width: 100%;
   max-width: 100%;
-}
-
-.listing-items.list > .listing-item:first-child,
-.listing-items.list :where(.pinned-items, .folder-items, .file-items) .listing-item:first-child {
-  border-top-left-radius: var(--borderRadius);
-  border-top-right-radius: var(--borderRadius);
-  border-top: var(--borderWidth) solid var(--divider);
-}
-
-.listing-items.list > .listing-item:not(:has(~ .listing-item)),
-.listing-items.list :where(.pinned-items, .folder-items, .file-items) .listing-item:last-child {
-  border-bottom-left-radius: var(--borderRadius);
-  border-bottom-right-radius: var(--borderRadius);
-  border-bottom: var(--borderWidth) solid var(--divider);
-  margin-bottom: .5em;
 }
 
 /* size, modified, type, date added, duration */
@@ -536,8 +502,8 @@ body.rtl .listing-items {
 }
 
 .listing-item[aria-selected="true"] {
-  background-color: color-mix(in srgb, var(--primaryColor) 50%, transparent);
-  color: white;
+  background-color: var(--accent-container);
+  color: var(--on-accent-container);
   scroll-margin-top: 9em;
   scroll-margin-bottom: 3em;
 }
@@ -644,10 +610,6 @@ body.rtl .listing-items {
   right: 0.5em;
 }
 
-.listing-items.list .listing-item.zebra-row:not([aria-selected="true"]),
-.listing-items.compact .listing-item.zebra-row:not([aria-selected="true"]) {
-  background: color-mix(in srgb, var(--surfacePrimary) 20%, var(--background) 60%);
-}
 
 .search-entry.zebra-row {
   background: color-mix(in srgb, var(--surfacePrimary) 80%, var(--background) 60%);

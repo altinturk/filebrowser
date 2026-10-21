@@ -206,17 +206,17 @@ export default {
 #sidebar {
   display: flex;
   flex-direction: column;
-  padding: 1em;
+  padding: 8px 12px 0;
   width: 20em;
   position: fixed;
   z-index: 4;
   transform: translateZ(0);
-  height: 100%;
   transition: left 0.4s ease, width 0.4s ease, z-index 0s linear 0.2s;
   top: var(--header-height);
-  padding-bottom: 4em;
-  background-color: var(--panel-bg);
-  backdrop-filter: var(--panel-blur);
+  height: calc(100% - var(--header-height));
+  padding-bottom: 8px;
+  background-color: var(--background);
+  color: var(--textPrimary);
   will-change: left;
   backface-visibility: hidden;
   isolation: isolate;
@@ -270,24 +270,38 @@ body.sidebar-resizing * {
  * * * * * * * * * * * * * * * */
 
 .credits {
-  font-size: 1em;
-  color: var(--textPrimary);
-  padding-left: 1em;
-  padding-bottom: 1em;
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 4px 12px;
+  padding: 8px 16px 4px;
+  border-top: 1px solid var(--divider);
+  font-size: 12px;
+  color: var(--textSecondary);
 }
 
 .credits > span {
-  display: block;
-  margin-top: 0.5em;
-  margin-left: 0;
+  display: inline;
+}
+
+.credits a:hover {
+  color: var(--textPrimary);
+  text-decoration: underline;
+}
+
+.credits h4 {
+  font-size: 12px;
+  font-weight: 500;
 }
 
 .buffer {
-  flex-grow: 1;
+  flex-grow: 0;
 }
 
 .release-banner {
-  background-color: var(--primaryColor);
+  border-radius: var(--radius-m);
+  color: var(--on-accent-container);
+  background-color: var(--accent-container);
   display: flex !important;
   height: fit-content !important;
   justify-content: space-between;

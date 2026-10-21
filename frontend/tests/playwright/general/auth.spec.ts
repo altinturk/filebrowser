@@ -28,6 +28,8 @@ test("logout", async ({ browser }) => {
   await expect(page).toHaveTitle(/Graham's Filebrowser - Files/);
   let cookies = await context.cookies();
   expect(cookies.find((c) => c.name === "filebrowser_quantum_jwt")?.value).toBeDefined();
+  // Logout lives in the app-bar account menu.
+  await page.locator("button.account__avatar").click();
   await page.locator('button[aria-label="logout-button"]').click();
   await page.waitForURL("**/login", { timeout: 2000 });
   await expect(page).toHaveTitle("Graham's Filebrowser - Login");

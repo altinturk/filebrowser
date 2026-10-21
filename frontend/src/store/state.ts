@@ -222,7 +222,7 @@ function loadMarkdownSplitView() {
  */
 function getSidebarWidth() {
   const savedWidth = localStorage.getItem("sidebarWidth");
-  return savedWidth ? parseFloat(savedWidth) : 20; // 20em
+  return savedWidth ? parseFloat(savedWidth) : 18.5; // 18.5em = 259px at the 14px base
 }
 
 function getSidebarMode() {

@@ -758,9 +758,11 @@ export default {
   min-width: 0;
   min-height: 2.5em;
   margin-top: 0;
-  padding: 0.5em 1em;
-  background: var(--primaryColor);
-  color: white;
+  padding: 8px 20px;
+  border-bottom: 1px solid var(--divider);
+  background: transparent;
+  color: var(--textSecondary);
+  font-size: 13px;
   overflow-wrap: break-word;
   margin-bottom: 0 !important;
   box-sizing: border-box;
@@ -906,26 +908,24 @@ export default {
 #result-list {
   scrollbar-width: none;
   max-width: 95vw;
-  background-color: var(--background);
+  background-color: transparent;
   color: var(--textPrimary);
 }
 
 #results>#result-list {
   max-height: 80vh;
-  width: 35em;
+  width: var(--search-anchor-width, 35em);
   overflow: scroll;
   padding-bottom: 1em;
   transition: width 0.3s ease 0s;
 }
 
 #results {
-  animation: slide-down 0.5s forwards;
-  border-radius: var(--borderRadius);
-  border-top: none;
-  border-top-left-radius: 0;
-  border-top-right-radius: 0;
-  border: var(--borderWidth) solid var(--surfaceSecondary);
-  box-shadow: 0 2em 50px 10px rgb(0 0 0 / 30%);
+  animation: slide-down 0.2s forwards;
+  border: 0;
+  border-radius: 0 0 var(--radius-xl) var(--radius-xl);
+  box-shadow: var(--elevation-2);
+  clip-path: inset(0 -20px -20px -20px);
   background-color: var(--surfacePrimary);
   max-height: 80vh;
   overflow: hidden;
@@ -943,13 +943,13 @@ export default {
 }
 
 #search #result-list.active {
-  width: 1000px;
+  width: var(--search-anchor-width, 1000px);
 }
 
 /* Animations */
 @keyframes slide-down {
   0% {
-    transform: translateY(-3em);
+    transform: translateY(-8px);
     opacity: 0;
   }
   100% {
@@ -959,31 +959,32 @@ export default {
 }
 
 /* Search */
+/* Opens exactly over the app-bar search pill (Default.vue sets the anchor vars). */
 #search {
   background-color: unset !important;
   z-index: 5;
   position: fixed;
-  top: 0.5em;
-  min-width: 35em;
-  left: 50%;
-  transform: translateX(-50%);
+  top: calc(8px + var(--safe-area-top));
+  min-width: var(--search-anchor-width, 35em);
+  left: var(--search-anchor-left, 50%);
+  transform: translateX(var(--search-anchor-shift, -50%));
 }
 
 .search-input-container {
-  background-color: rgb(100 100 100 / 20%);
   display: flex;
-  padding: 0.5em 0.75em;
-  border-radius: var(--borderRadius);
-  border-style: unset;
   align-items: center;
-  height: 3em;
-  gap: 0.5em;
+  gap: 12px;
   width: 100%;
+  height: 48px;
+  padding: 0 16px 0 4px;
+  border-style: unset;
+  border-radius: var(--radius-full);
+  background-color: var(--search-bg);
 }
 
 .search-input-container .material-symbols {
-  font-size: 1.25em;
-  color: rgb(255 255 255 / 70%);
+  font-size: 24px;
+  color: var(--textSecondary);
 }
 
 #search.active .search-input-container .material-symbols {
@@ -994,8 +995,9 @@ export default {
   border: 0;
   background-color: transparent;
   padding: 0;
-  color: var(--divider);
-  font-size: 0.95em;
+  color: var(--textPrimary);
+  font: inherit;
+  font-size: 16px;
 }
 
 #search-input {
@@ -1016,13 +1018,10 @@ export default {
 }
 
 #search.active .search-input-container {
-  background-color: var(--background);
-  border-color: var(--surfaceSecondary);
-  border-style: solid;
-  border-bottom-style: none;
-  border-bottom-right-radius: 0 !important;
-  border-bottom-left-radius: 0 !important;
-  border-width: var(--borderWidth);
+  background-color: var(--surfacePrimary);
+  border-radius: var(--radius-xl) var(--radius-xl) 0 0 !important;
+  box-shadow: var(--elevation-2);
+  clip-path: inset(-20px -20px 0 -20px);
 }
 
 #result-list p {
@@ -1036,26 +1035,11 @@ export default {
 
 .search-entry {
   position: relative;
-  border-left: var(--borderWidth) solid var(--divider);
-  border-right: var(--borderWidth) solid var(--divider);
+  border-radius: var(--radius-s);
 }
-
-.search-entry:first-child {
-  border-top: var(--borderWidth) solid var(--divider);
-  border-top-left-radius: var(--borderRadius);
-  border-top-right-radius: var(--borderRadius);
-}
-
-.search-entry:last-child {
-  border-bottom: var(--borderWidth) solid var(--divider);
-  border-bottom-left-radius: var(--borderRadius);
-  border-bottom-right-radius: var(--borderRadius);
-}
-
 
 .search-entry:hover {
-  background-color: var(--hoverOverlay);
-  transform: scale(1.01);
+  background-color: var(--state-hover);
   box-shadow: none !important;
 }
 

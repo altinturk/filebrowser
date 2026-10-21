@@ -1,0 +1,321 @@
+/* stylelint-disable no-descending-specificity -- each view mode deliberately re-overrides the
+   shared .listing-item rules above it; grouping by mode reads better than sorting by specificity. */
+/* =================================================================
+   Drive layout
+   List/compact: a flat table (48px rows, hairline dividers).
+   Normal: folder chips + file cards. Gallery: rounded image tiles.
+   ================================================================= */
+:root {
+  --listing-col-gap: 16px;
+  --listing-col-size: 7rem;
+  --listing-col-modified: 11rem;
+}
+
+.listing-items {
+  padding: 0 16px 52px;
+}
+
+.listing-item {
+  color: var(--textPrimary);
+  background: transparent;
+  font-size: 14px;
+  transition: background-color 0.1s ease;
+}
+
+.listing-item:hover {
+  background: var(--state-hover);
+}
+
+.listing-items .listing-item[aria-selected="true"],
+.listing-items .listing-item.activebutton {
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+}
+
+/* Selection is shown by the fill; keep the outline only for drag targets. */
+.listing-items .listing-item:is([aria-selected="true"], .context-item)::before {
+  border-width: 0 !important;
+}
+
+.listing-items .listing-item.drag-over::before,
+.listing-items .listing-item.half-selected::before {
+  border: 2px solid var(--accent) !important;
+}
+
+/* Folder glyphs are neutral like Drive; colour stays on file-type icons. */
+.listing-item[data-dir="true"] .primary-icons {
+  color: var(--folder-color);
+}
+
+.listing-items h2 {
+  margin: 0;
+  padding: 16px 8px 8px;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  color: var(--textPrimary);
+}
+
+/* ---- list + compact: table rows ---- */
+.listing-items.list,
+.listing-items.compact {
+  --icon-size: 24px;
+  --icon-font-size: 24px;
+}
+
+.listing-items.list .listing-item,
+.listing-items.compact .listing-item {
+  width: 100%;
+  height: 48px;
+  margin: 0;
+  padding: 0 8px;
+  border: 0;
+  border-bottom: 1px solid var(--divider);
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.listing-items.compact .listing-item {
+  height: 40px;
+}
+
+.listing-items.list .listing-item:is(:hover, [aria-selected="true"]),
+.listing-items.compact .listing-item:is(:hover, [aria-selected="true"]) {
+  border-bottom-color: transparent;
+  border-radius: var(--radius-s);
+}
+
+.listing-items.list .image-preview,
+.listing-items.compact .image-preview {
+  background: transparent;
+  border-radius: 4px;
+}
+
+.listing-items.list .listing-item .text,
+.listing-items.compact .listing-item .text {
+  display: flex;
+  align-items: center;
+  padding-left: 16px;
+  padding-right: var(--listing-col-gap);
+}
+
+.listing-items.list .listing-item .name,
+.listing-items.compact .listing-item .name {
+  order: 1;
+  font-weight: 500;
+}
+
+.listing-items.list .listing-item :is(.size, .modified, .kind, .created, .duration),
+.listing-items.compact .listing-item :is(.size, .modified, .kind, .created, .duration) {
+  color: var(--textSecondary);
+  font-size: 14px;
+  text-align: left;
+}
+
+.listing-items.list .listing-item[aria-selected="true"] :is(.size, .modified, .kind, .created, .duration),
+.listing-items.compact .listing-item[aria-selected="true"] :is(.size, .modified, .kind, .created, .duration) {
+  color: inherit;
+}
+
+.listing-items.list .listing-item .modified,
+.listing-items.compact .listing-item .modified {
+  order: 2;
+}
+
+.listing-items.list .listing-item .size,
+.listing-items.compact .listing-item .size {
+  order: 3;
+}
+
+.listing-items.list .listing-item .kind,
+.listing-items.compact .listing-item .kind {
+  order: 4;
+  padding-left: var(--listing-col-gap);
+}
+
+.listing-items.list .listing-item .created,
+.listing-items.compact .listing-item .created {
+  order: 5;
+}
+
+.listing-items.list .listing-item .duration,
+.listing-items.compact .listing-item .duration {
+  order: 6;
+}
+
+/* Continuous table: no "Folders"/"Files" headings; pinned keeps its label. */
+.listing-items.list > div:has(+ .folder-items),
+.listing-items.list > div:has(+ .file-items),
+.listing-items.compact > div:has(+ .folder-items),
+.listing-items.compact > div:has(+ .file-items) {
+  display: none;
+}
+
+/* ---- normal (Drive grid) ---- */
+.listing-items.normal {
+  --icon-size: 24px;
+  --icon-font-size: 24px;
+}
+
+.listing-items.normal .folder-items,
+.listing-items.normal .file-items,
+.listing-items.normal .pinned-items {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 12px;
+  padding: 0 8px;
+}
+
+.listing-items.normal .listing-item {
+  width: auto;
+  margin: 0;
+  border: 0;
+  box-shadow: none;
+  background: var(--alt-background);
+  border-radius: var(--radius-m);
+}
+
+.dark-mode .listing-items.normal .listing-item {
+  background: var(--surfaceSecondary);
+}
+
+.listing-items.normal .listing-item:hover {
+  background: color-mix(in srgb, var(--alt-background) 88%, var(--textPrimary));
+}
+
+.dark-mode .listing-items.normal .listing-item:hover {
+  background: color-mix(in srgb, var(--surfaceSecondary) 88%, var(--textPrimary));
+}
+
+.listing-items.normal .listing-item[aria-selected="true"] {
+  background: var(--accent-container);
+}
+
+.listing-items.normal .listing-item .image-preview {
+  background: transparent;
+}
+
+.listing-items.normal .listing-item .text {
+  padding-left: 12px;
+}
+
+.listing-items.normal .listing-item .name {
+  font-weight: 500;
+}
+
+/* Folder chip: icon + name only. */
+.listing-items.normal .listing-item[data-dir="true"] {
+  height: 48px;
+  padding: 0 16px;
+}
+
+.listing-items.normal .listing-item[data-dir="true"] :is(.size, .modified) {
+  display: none;
+}
+
+/* File card: title row on top, preview well below. */
+.listing-items.normal .listing-item[data-dir="false"] {
+  flex-direction: column-reverse;
+  align-items: stretch;
+  justify-content: flex-end;
+  height: auto;
+  aspect-ratio: 1 / 0.95;
+  padding: 0 8px 8px;
+}
+
+.listing-items.normal .listing-item[data-dir="false"] .text {
+  display: flex;
+  align-items: center;
+  flex: 0 0 48px;
+  padding: 0 8px;
+}
+
+.listing-items.normal .listing-item[data-dir="false"] .text :is(.size, .modified) {
+  display: none;
+}
+
+.listing-items.normal .listing-item[data-dir="false"] > div:first-child {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  border-radius: var(--radius-s);
+  background: var(--surfacePrimary);
+  overflow: hidden;
+}
+
+.listing-items.normal .listing-item[data-dir="false"] .image-preview {
+  --icon-font-size: 64px;
+
+  width: 100%;
+  height: 100%;
+  border-radius: var(--radius-s);
+}
+
+.listing-items.normal .listing-item[data-dir="false"] .image-preview img {
+  width: 100%;
+  height: 100%;
+  object-fit: cover;
+}
+
+/* ---- gallery ---- */
+.listing-items.gallery .folder-items,
+.listing-items.gallery .file-items,
+.listing-items.gallery .pinned-items {
+  gap: 8px;
+  padding: 0 8px;
+}
+
+.listing-items.gallery .listing-item {
+  border-radius: var(--radius-m);
+  box-shadow: none;
+}
+
+.listing-items.gallery .image-preview {
+  border-radius: var(--radius-m);
+}
+
+.message {
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  color: var(--textSecondary);
+}
+
+/* ---- phones: Drive mobile rows (name + one meta line) ---- */
+@media (width <= 768px) {
+  /* No inset card on phones: one white surface edge to edge. */
+  #main {
+    background: var(--surfacePrimary);
+  }
+
+  .listing-items {
+    padding: 0 8px 52px;
+  }
+
+  .listing-items.list .listing-item {
+    height: auto;
+    min-height: 60px;
+    padding: 8px;
+  }
+
+  .listing-items.list .listing-item .text {
+    gap: 2px;
+    padding-left: 16px;
+  }
+
+  .listing-items.list .listing-item .size {
+    display: none;
+  }
+
+  .listing-items.list .listing-item .modified {
+    font-size: 12px;
+  }
+
+  .listing-items.normal .folder-items,
+  .listing-items.normal .file-items,
+  .listing-items.normal .pinned-items {
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: 8px;
+    padding: 0;
+  }
+}

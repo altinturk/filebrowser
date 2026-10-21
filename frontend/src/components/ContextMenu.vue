@@ -1070,17 +1070,44 @@ export default {
 #context-menu {
   position: absolute;
   z-index: 1000;
-  background-color: var(--background);
-  max-width: 20em;
-  min-width: 13em;
-  min-height: 4em;
-  height: auto;
   display: flex;
   flex-direction: column;
   justify-content: center;
-  border-radius: var(--borderRadius);
-  padding: 0.5em;
+  min-width: 240px;
+  max-width: 320px;
+  min-height: 4em;
+  height: auto;
+  padding: 8px 0;
+  border-radius: var(--radius-s);
+  background-color: var(--surfacePrimary);
+  box-shadow: var(--elevation-2);
   overscroll-behavior: contain;
+}
+
+.dark-mode #context-menu {
+  background-color: var(--surfaceSecondary);
+}
+
+#context-menu :deep(.action) {
+  gap: 16px;
+  width: 100%;
+  min-height: 36px;
+  padding: 0 16px;
+  border-radius: 0;
+  color: var(--textPrimary);
+  font-size: 14px;
+}
+
+#context-menu :deep(.action > i) {
+  padding: 0;
+  font-size: 20px;
+  color: var(--textSecondary);
+}
+
+#context-menu :deep(hr) {
+  margin: 8px 0;
+  border: 0;
+  border-top: 1px solid var(--divider);
 }
 
 #context-menu.centered {

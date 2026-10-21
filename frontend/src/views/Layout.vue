@@ -13,6 +13,7 @@
     <sidebar v-if="!invalidShare"></sidebar>
     <Scrollbar id="main" :class="{
       moveWithSidebar: moveWithSidebar.shouldMove,
+      'content-card': contentCard,
       'remove-padding-top': isOnlyOffice,
       scrollable: scrollable,
     }" :style="[moveWithSidebar.style, spaceForEditorStatusBar]">
@@ -111,8 +112,15 @@ export default {
     isLoggedIn() {
       return getters.isLoggedIn();
     },
+    contentCard() {
+      return getters.shellView() === "listingView" && !getters.isMobile();
+    },
     moveWithSidebar() {
       const shouldMove = getters.isSidebarVisible() && getters.isStickySidebar();
+      if (this.contentCard) {
+        // The listing card sits beside the sidebar instead of padding under it.
+        return { shouldMove, style: { left: shouldMove ? `${state.sidebar.width}em` : "16px" } };
+      }
       return {
         shouldMove,
         style: shouldMove ? { paddingLeft: `${state.sidebar.width}em` } : {}
@@ -307,6 +315,24 @@ export default {
 
 #main.moveWithSidebar {
   transition: padding-left 0.2s ease;
+}
+
+/* Drive-style content card: rounded surface inset from the shell on the right and bottom. */
+#main.content-card {
+  top: var(--header-height);
+  right: 16px;
+  bottom: 16px;
+  width: auto;
+  height: auto;
+  padding-top: 0;
+  padding-left: 0;
+  border-radius: var(--radius-l);
+  background: var(--surfacePrimary);
+  transition: left 0.2s ease;
+}
+
+#main.content-card.resizing {
+  transition: none;
 }
 
 #main.moveWithSidebar.resizing {

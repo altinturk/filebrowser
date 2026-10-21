@@ -421,15 +421,15 @@ export default {
     },
     containerStyles() {
       // Dynamic padding-top: applied to the entire container (loading spinner + listing items)
+      // Matches Shelf.vue: 64px title row, plus the 40px table header (list) or 48px sort row (grids).
       const isEmpty = this.numDirs + this.numFiles + this.numPinned === 0;
-      const isRootPath = state.req.path === '/' || !state.req.path;
       if (isEmpty) {
-        return { 'padding-top': '4.1em' }; // Empty - no files or folders
-      } else if (isRootPath) {
-        return { 'padding-top': '4.29em' }; // Root - no breadcrumbs showing
-      } else {
-        return { 'padding-top': '7.51em' }; // Non-root - breadcrumbs + listing header
+        return { 'padding-top': '64px' };
       }
+      const mode = getters.viewMode();
+      const tableHeader = (mode === 'list' || mode === 'compact') && !getters.isMobile();
+      const headerHeight = tableHeader ? 40 : 48;
+      return { 'padding-top': `${64 + headerHeight}px` };
     },
     itemStyles() {
       const viewMode = getters.viewMode();
@@ -1429,11 +1429,6 @@ export default {
   height: 100%;
   display: flex;
   flex-direction: column;
-  padding-right: 0.5em;
-}
-
-.add-padding {
-  padding-left: 0.5em;
 }
 
 .font-size-large h2 {
@@ -1454,11 +1449,6 @@ export default {
 
 .listing-item .pinned-indicator {
   font-size: 1rem;
-}
-
-.listing-items:not(.list, .compact) .folder-items a {
-  border-width: var(--borderWidth);
-  border-style: solid;
 }
 
 /* Upload Share Styles */

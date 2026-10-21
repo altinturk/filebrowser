@@ -300,8 +300,8 @@ func setupFrontend(generate bool) {
 	if Config.Frontend.Description == "" {
 		Config.Frontend.Description = defaultFrontendDescription
 	}
-	Config.Frontend.Styling.LightBackground = FallbackColor(Config.Frontend.Styling.LightBackground, "#f5f5f5")
-	Config.Frontend.Styling.DarkBackground = FallbackColor(Config.Frontend.Styling.DarkBackground, "#141D24")
+	Config.Frontend.Styling.LightBackground = FallbackColor(Config.Frontend.Styling.LightBackground, "#f8fafd")
+	Config.Frontend.Styling.DarkBackground = FallbackColor(Config.Frontend.Styling.DarkBackground, "#131314")
 	var err error
 	if Config.Frontend.Styling.CustomCSS != "" {
 		Config.Frontend.Styling.CustomCSSRaw, err = readCustomCSS(Config.Frontend.Styling.CustomCSS)

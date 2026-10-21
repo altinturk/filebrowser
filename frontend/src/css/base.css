@@ -1,7 +1,10 @@
 body {
-  font-family: Roboto, sans-serif;
+  font-family: var(--font-body);
   padding-top: var(--header-height);
-  color: #333;
+  color: var(--textPrimary);
+  background: var(--background);
+  font-size: 14px;
+  -webkit-font-smoothing: antialiased;
   overflow:initial;
   scrollbar-width: none; /* Firefox */
 }
@@ -68,12 +71,11 @@ audio, video {
 }
 
 .floating-window {
-  background-color: var(--background);
-  border: var(--borderWidth) solid var(--surfaceSecondary);
-  box-shadow:
-  0 1px 1px hsl(0deg 0% 0% / 7.5%),
-  0 2px 2px hsl(0deg 0% 0% / 7.5%),
-  0 4px 4px hsl(0deg 0% 0% / 7.5%),
-  0 8px 8px hsl(0deg 0% 0% / 7.5%),
-  0 16px 16px hsl(0deg 0% 0% / 7.5%);
+  background-color: var(--surfacePrimary);
+  border: 0;
+  box-shadow: var(--elevation-3);
+}
+
+.dark-mode .floating-window {
+  background-color: var(--surfaceSecondary);
 }

@@ -1,5 +1,5 @@
 <template>
-  <div class="listing-item-header card" :class="{ 'desktop-view': !isMobile }">
+  <div class="listing-item-header" :class="{ 'desktop-view': !isMobile && !gridMode, 'grid-mode': gridMode }">
     <p
       :class="{ active: nameSorted }"
       class="name"
@@ -148,6 +148,10 @@ export default {
     galleryView() {
       return getters.viewMode() === "gallery";
     },
+    gridMode() {
+      // Grids and phones get sort chips; desktop lists get a column header.
+      return (!this.isListMode || this.isMobile) && !this.usePickerSorting && !this.useNavigationSorting;
+    },
     isListMode() {
       const mode = getters.viewMode();
       return mode === "list" || mode === "compact";
@@ -237,36 +241,41 @@ export default {
 </script>
 
 <style scoped>
+/* Table header for list/compact rows (Drive "Name | Last modified | File size"). */
 .listing-item-header {
   display: flex;
-  background: var(--surfacePrimary);
-  border: 1px solid var(--divider);
-  z-index: 999;
-  padding: .85em;
-  width: 100%;
-  box-sizing: border-box;
-  border-top-left-radius: 1em;
-  border-top-right-radius: 1em;
-  margin-bottom: 0 !important;
+  align-items: center;
   justify-content: space-between;
+  width: 100%;
+  height: 40px;
+  box-sizing: border-box;
+  margin-bottom: 0 !important;
+  padding: 0 8px;
+  border-bottom: 1px solid var(--divider);
+  background: var(--surfacePrimary);
+  color: var(--textPrimary);
+  font-size: 14px;
+  font-weight: 500;
   user-select: none;
+  z-index: 999;
 }
 
 p {
-  margin: 0;
-  cursor: pointer;
-  box-sizing: border-box;
   display: flex;
   align-items: center;
+  gap: 4px;
   width: 100%;
+  height: 32px;
+  margin: 0;
+  box-sizing: border-box;
+  cursor: pointer;
 }
 
 span {
-  vertical-align: middle;
+  min-width: 0;
   overflow: hidden;
   text-overflow: ellipsis;
   white-space: nowrap;
-  min-width: 0;
 }
 
 .name {
@@ -286,17 +295,17 @@ span {
    header lines up with the items and the name column gets the remaining space. */
 /* stylelint-disable no-unknown-custom-properties -- defined in css/listing.css */
 .desktop-view {
-  /* same right inset as the list/compact rows */
-  padding-right: var(--listing-col-gap);
+  padding-right: calc(8px + var(--listing-col-gap));
 }
 
 /* With quick download the rows end in a ~2.4rem download icon after the inset */
 .desktop-view:has(> .placeholder) {
-  padding-right: 0;
+  padding-right: 8px;
 }
 
 .desktop-view > .placeholder {
   flex: 0 0 auto;
+  order: 7;
   width: calc(var(--listing-col-gap) + 2.4rem);
 }
 
@@ -307,55 +316,81 @@ span {
 .desktop-view .duration {
   flex: 0 0 auto;
   padding-left: var(--listing-col-gap);
-  justify-content: flex-end;
-  text-align: right;
-}
-
-.desktop-view .size {
-  width: var(--listing-col-size);
-}
-
-.desktop-view .modified {
-  width: var(--listing-col-modified);
-}
-
-.desktop-view .kind {
-  width: var(--listing-col-kind);
-  padding-left: calc(var(--listing-col-gap) + 0.5rem);
   justify-content: flex-start;
   text-align: left;
 }
 
-.desktop-view .kind span {
-  flex-shrink: 0;
+/* Drive column order: name, modified, size */
+.desktop-view .modified {
+  order: 2;
+  width: var(--listing-col-modified);
+}
+
+.desktop-view .size {
+  order: 3;
+  width: var(--listing-col-size);
+}
+
+.desktop-view .kind {
+  order: 4;
+  width: var(--listing-col-kind);
 }
 
 .desktop-view .created {
+  order: 5;
   width: var(--listing-col-created);
 }
 
 .desktop-view .duration {
+  order: 6;
   width: var(--listing-col-duration);
 }
+
 /* stylelint-enable no-unknown-custom-properties */
 
+/* Sort arrows sit after the label and appear on hover or for the active column. */
 i {
-  font-size: 1.2em;
-  vertical-align: middle;
-  margin-left: .1em;
+  flex-shrink: 0;
+  order: 2;
+  font-size: 18px;
   opacity: 0;
   transition: opacity 0.1s ease;
-  flex-shrink: 0;
 }
 
 .active i,
-p:hover i,
-.active:hover i {
+p:hover i {
   opacity: 1;
 }
 
-.active,
-p:hover {
-  font-weight: bold;
+/* Grid views: sort controls as a row of chips, right-aligned. */
+.grid-mode {
+  justify-content: flex-end;
+  gap: 8px;
+  height: 48px;
+  border-bottom: 0;
+}
+
+.grid-mode p {
+  flex: 0 0 auto;
+  width: auto;
+  padding: 0 12px;
+  border: 1px solid var(--divider);
+  border-radius: var(--radius-s);
+  color: var(--textSecondary);
+  font-size: 13px;
+}
+
+.grid-mode p:hover {
+  background: var(--state-hover);
+}
+
+.grid-mode p.active {
+  border-color: transparent;
+  background: var(--accent-container);
+  color: var(--on-accent-container);
+}
+
+.grid-mode .placeholder {
+  display: none;
 }
 </style>

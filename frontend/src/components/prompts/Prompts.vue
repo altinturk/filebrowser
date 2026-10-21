@@ -789,7 +789,7 @@ export default {
 <style scoped>
 /* Floating window base styles */
 .floating-window {
-  border-radius: var(--borderRadius);
+  border-radius: var(--radius-xl);
   position: fixed;
   top: 50%;
   left: 50%;
@@ -831,9 +831,7 @@ export default {
 .floating-window > :deep(.card-content) {
   position: relative;
   z-index: 1;
-  padding: 0.5em;
-  padding-top: 3.5em;
-  padding-bottom: 3.5em;
+  padding: 64px 24px 72px;
   margin-top: 1px;
   margin-bottom: 1px;
   flex: 1 1 auto;
@@ -844,7 +842,7 @@ export default {
 
 /* No buttons variant - removes bottom padding */
 .floating-window > :deep(.card-content.no-buttons) {
-  padding-bottom: 0.5em;
+  padding-bottom: 24px;
 }
 
 .floating-window > :deep(.card-content.prompt-panel) {
@@ -865,20 +863,20 @@ export default {
   left: 0;
   right: 0;
   display: flex;
+  align-items: center;
   justify-content: flex-end;
-  padding: 0.5em;
-  height: 3em;
-  gap: 0.25em;
+  height: 64px;
+  padding: 0 24px 8px;
+  gap: 8px;
 }
 
 .floating-window :deep(.prompt-taskbar) {
-  background-color: var(--panel-bg);
-  backdrop-filter: var(--panel-blur);
+  background-color: inherit;
+  backdrop-filter: none;
 }
 
 .floating-window :deep(.card-actions) {
-  backdrop-filter: blur(12px);
-  background-color: transparent;
+  background-color: inherit;
 }
 
 .floating-window.is-dragging {
@@ -914,15 +912,17 @@ export default {
   display: flex;
   align-items: center;
   justify-content: center;
-  width: 2em;
-  height: 2em;
+  width: 40px;
+  height: 40px;
+  min-width: 40px;
+  margin: 0 8px;
   padding: 0;
   border: none;
   border-radius: 50%;
-  background: #c62828;
-  color: #fff;
+  background: transparent;
+  color: var(--textSecondary);
   cursor: pointer;
-  transition: background 0.15s, filter 0.15s;
+  transition: background 0.15s;
 }
 
 .prompt-close:disabled {
@@ -945,19 +945,12 @@ export default {
   cursor: grab;
   user-select: none;
   touch-action: none;
-  transition: background 0.15s;
-  background: var(--surfaceSecondary);
-  height: 3em;
+  height: 64px;
   z-index: 10;
-}
-
-.prompt-taskbar:hover {
-  background: color-mix(in srgb, var(--primaryColor) 12%, var(--surfaceSecondary, #f5f5f5));
 }
 
 .prompt-taskbar.is-dragging {
   cursor: grabbing;
-  background: color-mix(in srgb, var(--primaryColor) 18%, var(--surfaceSecondary, #f5f5f5));
 }
 
 .prompt-close-right .prompt-close {
@@ -981,12 +974,11 @@ export default {
 }
 
 .prompt-close:hover {
-  background: #b71c1c;
-  filter: brightness(1.1);
+  background: var(--state-hover);
 }
 
 .prompt-close .material-symbols {
-  font-size: 1em;
+  font-size: 22px;
 }
 
 .prompt-resize-corner-left {
@@ -997,23 +989,31 @@ export default {
   opacity: 1;
 }
 
+/* Title sits left like an M3 dialog headline; clear the close button when it is on the left. */
 .prompt-taskbar-drag {
   position: absolute;
   inset: 0;
   display: flex;
   align-items: center;
-  justify-content: center;
+  justify-content: flex-start;
+  padding: 0 64px;
   pointer-events: none;
 }
 
+.prompt-close-right .prompt-taskbar-drag {
+  padding-left: 24px;
+}
+
 .prompt-title {
-  font-weight: 500;
-  font-size: 1rem;
-  white-space: nowrap;
+  max-width: 100%;
   overflow: hidden;
-  text-overflow: ellipsis;
-  max-width: 80%;
   color: var(--textPrimary);
+  font-family: var(--font-display);
+  font-size: 22px;
+  font-weight: 400;
+  line-height: 28px;
+  text-overflow: ellipsis;
+  white-space: nowrap;
 }
 
 .resize-handles {

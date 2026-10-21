@@ -809,27 +809,27 @@ onBeforeUnmount(() => {
 
 <style scoped>
 .file-tree {
-  font-size: 0.9rem;
+  width: 100%;
+  min-width: 0;
+  font-size: 14px;
   user-select: none;
-  min-width: 100%;
-  width: fit-content;
 }
 
 .file-tree-root {
-  padding: 0.25em 0;
+  padding: 0;
 }
 
 .tree-list {
-  list-style: none;
-  padding-left: 0;
   margin: 0;
+  padding-left: 0;
+  list-style: none;
 }
 
-/* indent nested lists (children) */
+/* Nested levels: plain indent, like Drive's folder tree. */
 .tree-list .tree-list {
-  margin-left: 1.2em; /* this creates the tree effect */
-  border-left: 0.05em dotted var(--primaryColor); /* guide line */
-  padding-left: 0.2em;
+  margin-left: 16px;
+  padding-left: 0;
+  border-left: 0;
 }
 
 .tree-item {
@@ -838,20 +838,20 @@ onBeforeUnmount(() => {
 }
 
 .tree-node {
+  position: relative;
   display: flex;
   align-items: center;
-  padding: 0.15em 0.3em;
-  border-radius: 0.4em;
-  transition: background-color 0.1s;
-  white-space: nowrap;
-  overflow: hidden;
-  text-overflow: ellipsis;
-  line-height: 1.4;
+  gap: 4px;
   width: 100%;
+  height: 32px;
   box-sizing: border-box;
-  position: relative;
+  padding: 0 12px 0 4px;
+  border-radius: var(--radius-full);
+  color: var(--textPrimary);
+  line-height: 20px;
+  white-space: nowrap;
   text-decoration: none;
-  color: inherit;
+  transition: background-color 0.1s ease;
 }
 
 .tree-node.hidden-file {
@@ -859,17 +859,18 @@ onBeforeUnmount(() => {
 }
 
 .tree-node:hover {
-  background-color: var(--surfaceSecondary);
+  background-color: var(--state-hover);
 }
 
 .tree-node.current-item {
-  background-color: var(--primaryColor);
-  color: white;
+  background-color: var(--accent-container);
+  color: var(--on-accent-container);
+  font-weight: 600;
 }
 
 .tree-node.context-item,
 .tree-node.drag-over {
-  background-color: color-mix(in srgb, var(--primaryColor) 25%, transparent) !important;
+  background-color: color-mix(in srgb, var(--accent) 18%, transparent) !important;
   color: var(--textPrimary);
 }
 
@@ -880,15 +881,22 @@ onBeforeUnmount(() => {
 .expand-icon,
 .expand-icon-placeholder {
   display: inline-flex;
-  width: 1.5em;
-  justify-content: center;
-  align-items: center;
-  font-size: 1em;
-  color: var(--textSecondary);
   flex-shrink: 0;
+  align-items: center;
+  justify-content: center;
+  width: 24px;
+  height: 24px;
+  border-radius: var(--radius-full);
+  color: var(--textSecondary);
+}
+
+.expand-icon:hover {
+  background: var(--state-hover);
+  color: var(--textPrimary);
 }
 
 .expand-icon i {
+  font-size: 20px;
   transition: transform 0.12s ease;
 }
 
@@ -896,89 +904,94 @@ onBeforeUnmount(() => {
   transform: rotate(90deg);
 }
 
-.expand-icon:hover {
-  color: var(--primaryColor);
-}
-
 .pinned-indicator {
-  font-size: 0.9rem !important;
   flex-shrink: 0;
   margin: 0;
+  font-size: 14px !important;
 }
 
-.tree-node.current-item .expand-icon:hover,
+.tree-node.current-item .expand-icon,
 .tree-node.current-item .pinned-indicator {
-  color: white;
+  color: var(--on-accent-container);
 }
 
 .node-icon {
-  margin-right: 0.3em;
-  font-size: 1.2em;
-  flex-shrink: 0;
+  --icon-size: 24px;
+
   display: inline-flex;
+  flex-shrink: 0;
+  background: transparent;
   align-items: center;
-  width: 1.5em;
-  height: 1.5em;
   justify-content: center;
+  width: 24px;
+  height: 24px;
+}
+
+.node-icon :deep(.image-preview) {
+  --icon-size: 24px;
+
+  background: transparent;
 }
 
 .node-icon :deep(i) {
-  font-size: 1.2em;
+  font-size: 20px;
+  background: transparent;
+}
+
+.node-icon :deep(.primary-icons) {
+  color: var(--folder-color);
+}
+
+.tree-node.current-item .node-icon :deep(i) {
+  color: var(--on-accent-container);
 }
 
 .node-name {
   flex: 1;
+  min-width: 0;
+  margin-left: 8px;
   overflow: hidden;
   text-overflow: ellipsis;
-  margin-left: 0.2em;
-  min-width: 0;
 }
 
 .tree-loading {
   display: flex;
   justify-content: center;
-  padding: 0.5em;
+  padding: 8px;
   opacity: 0.7;
 }
 
 .tree-error {
-  padding: 1em;
-  text-align: center;
   display: flex;
   flex-direction: column;
   align-items: center;
-  gap: 0.5em;
+  gap: 8px;
+  padding: 16px;
+  text-align: center;
 }
 
 .tree-error.small {
-  padding: 0.5em;
-  font-size: 0.9em;
+  padding: 8px;
+  font-size: 13px;
 }
 
 .tree-empty {
-  padding: 0.5em;
-  text-align: center;
+  padding: 8px 16px;
   color: var(--textSecondary);
-  font-style: italic;
+  font-size: 13px;
 }
 
 .tree-empty-folder {
   display: flex;
   align-items: center;
-  gap: 0.3em;
-  padding: 0.5em 1em;
-  margin-left: 1.2em;
+  gap: 6px;
+  height: 32px;
+  margin-left: 32px;
   color: var(--textSecondary);
-  font-style: italic;
-  font-size: 0.9em;
+  font-size: 13px;
 }
 
 .tree-empty-folder i {
-  font-size: 1.4em;
-  line-height: 1;
-  display: inline-flex;
-  align-items: center;
-  height: 1em;
+  font-size: 18px;
 }
-
 </style>

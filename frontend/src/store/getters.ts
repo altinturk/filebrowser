@@ -13,6 +13,9 @@ import { defaultDarkMode } from "@/utils/theme.js";
 import { isMobileLayout } from '@/utils/viewport.js';
 import type { DisplayPreference, FileListItem } from "./types.ts";
 
+// Last view that was not the transient 'loading' state (see shellView).
+let lastSettledView = '';
+
 export const getters = {
   displayPreferenceFor: (source: string, path: string): DisplayPreference | null => {
     const sourceKey = getters.isShare() ? getters.currentHash() : source;
@@ -321,7 +324,8 @@ export const getters = {
     if (getters.currentPromptName() && !getters.isStickySidebar()) {
       visible = false
     }
-    if (previewViews.includes(cv) && !getters.previewPerms().disableHideSidebar) {
+    // shellView: a folder-to-folder navigation briefly reports 'loading' (a preview view); don't hide for that.
+    if (previewViews.includes(getters.shellView()) && !getters.previewPerms().disableHideSidebar) {
       visible = false
     }
     if (state.shareInfo?.singleFileShare) {
@@ -390,6 +394,19 @@ export const getters = {
   },
   isShare: () => {
     return getters.shareHash() !== ""
+  },
+  /**
+   * Like currentView, but keeps the previous view while a navigation is in flight.
+   * Use for app-shell layout (sidebar actions, content card) so it does not collapse
+   * and re-expand on every folder change.
+   */
+  shellView: (): string => {
+    const cv = getters.currentView();
+    if (cv !== 'loading') {
+      lastSettledView = cv;
+      return cv;
+    }
+    return lastSettledView || cv;
   },
   currentView: (): string => {
     if (state.navigation.isTransitioning) return 'loading';

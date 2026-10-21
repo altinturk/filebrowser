@@ -9,6 +9,7 @@
 @import url("./base.css");
 @import url("./header.css");
 @import url("./listing.css");
+@import url("./listing-views.css");
 @import url("./dashboard.css");
 @import url("./mobile.css");
 @import url("./halloween.css");
@@ -83,17 +84,15 @@
   cursor: pointer;
 }
 
-.clickable:hover,
-.plyr .plyr__control:hover,
-button:hover,
-.action:hover,
+/* Material state layer: a translucent overlay on top of whatever fill the control has.
+   Low specificity (:where) so components can set their own hover fill. */
+:where(.clickable, button, .action, .plyr .plyr__control):where(:not(:disabled)):hover,
 .listing-item.drag-hover {
-  box-shadow: inset 0 -3em 3em var(--hoverOverlay) !important;
-  transform: scale(1.02);
+  background-image: linear-gradient(var(--state-hover), var(--state-hover));
 }
 
-.action:not(:disabled):hover {
-    background-color: rgb(0 0 0 / 12%);
+:where(.clickable, button, .action):where(:not(:disabled)):active {
+  background-image: linear-gradient(var(--state-press), var(--state-press));
 }
 
 .action .counter {

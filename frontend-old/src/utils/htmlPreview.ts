@@ -1,0 +1,320 @@
+import DOMPurify from "dompurify";
+import { getters, state } from "@/store/index.ts";
+import { getCachedViewToken } from "@/api/viewToken.js";
+import { getViewURL } from "@/api/resources.js";
+import { getParentDir, resolveRelativePath } from "@/utils/url.js";
+import { globalVars } from "./constants.js";
+
+export const HTML_SANITIZE_CONFIG = {
+  USE_PROFILES: { html: true, svg: true, svgFilters: true },
+  WHOLE_DOCUMENT: true,
+  ADD_TAGS: ["link"],
+  FORBID_TAGS: ["iframe", "object", "embed", "form", "base", "meta", "script"],
+  FORBID_ATTR: ["target", "formaction"],
+};
+
+const CSS_URL_PATTERN = /url\(\s*(['"]?)([^'")]+?)\1\s*\)/gi;
+const CSS_IMPORT_URL_PATTERN = /@import\s+url\(\s*['"]?([^'")\s]+)['"]?\s*\)/gi;
+const CSS_IMPORT_STRING_PATTERN = /@import\s+['"]([^'"]+)['"]/gi;
+
+const REWRITABLE_LINK_RELS = new Set([
+  "stylesheet",
+  "style",
+  "icon",
+  "shortcut icon",
+  "apple-touch-icon",
+  "preload",
+  "prefetch",
+  "modulepreload",
+  "manifest",
+  "font",
+]);
+
+const RESOURCE_ATTRIBUTES: Array<[string, string]> = [
+  ["link", "href"],
+  ["img", "src"],
+  ["video", "src"],
+  ["video", "poster"],
+  ["audio", "src"],
+  ["source", "src"],
+  ["track", "src"],
+  ["image", "href"],
+  ["image", "xlink:href"],
+  ["use", "href"],
+  ["use", "xlink:href"],
+  ["a", "href"],
+];
+
+const ALLOWED_ABSOLUTE_URI_PATTERN = /^(https?:|data:|mailto:|tel:|#)/i;
+
+// to stop relative hrefs from navigating the srcdoc iframe against the parent, and
+// to keep anchor links working inside the iframe itself instead (was opening the app inside the iframe)
+const NAV_GUARD_SCRIPT = `document.addEventListener("click", function (e) {
+  var a = e.target && e.target.closest ? e.target.closest("a") : null;
+  if (!a) return;
+  var href = a.getAttribute("href") || "";
+  if (href.charAt(0) !== "#") {
+    // Absolute links are left alone -- relative links would resolve to about:blank.
+    if (!/^[a-z][a-z0-9+.-]*:/i.test(href) && href.slice(0, 2) !== "//") {
+      e.preventDefault();
+    }
+    return;
+  }
+  var id = href.slice(1);
+  var el = id ? document.getElementById(id) : document.documentElement;
+  if (!el) return;
+  e.preventDefault();
+  el.scrollIntoView();
+}, true);`;
+
+function viewTokenForSibling(
+  resolvedPath: string,
+  baseFilePath: string,
+): string | undefined {
+  const items = state.req?.parentDirItems;
+  if (!items?.length) {
+    return undefined;
+  }
+
+  const exact = items.find((entry) => entry.path === resolvedPath);
+  if (exact?.viewToken) {
+    return exact.viewToken;
+  }
+
+  const resolvedDir = getParentDir(resolvedPath);
+  const baseDir = getParentDir(baseFilePath);
+  if (resolvedDir !== baseDir) {
+    return undefined;
+  }
+
+  const name = resolvedPath.split("/").filter(Boolean).pop();
+  if (!name) {
+    return undefined;
+  }
+
+  const item = items.find((entry) => {
+    if (entry.name !== name) {
+      return false;
+    }
+    if (entry.path) {
+      return getParentDir(entry.path) === resolvedDir;
+    }
+    return resolvedDir === baseDir;
+  });
+  return item?.viewToken;
+}
+
+export function isLocalResourceReference(href: string): boolean {
+  if (!href || typeof href !== "string") {
+    return false;
+  }
+  const trimmed = href.trim();
+  if (trimmed.startsWith("#")) {
+    return false;
+  }
+  return !/^[a-z][a-z0-9+.-]*:/i.test(trimmed) && !trimmed.startsWith("//");
+}
+
+export function buildPreviewResourceUrl(
+  href: string,
+  baseFilePath: string,
+  source: string,
+): string {
+  if (!href || !isLocalResourceReference(href)) {
+    return href;
+  }
+
+  const resolvedPath = resolveRelativePath(baseFilePath, href);
+  const viewToken =
+    viewTokenForSibling(resolvedPath, baseFilePath) ??
+    state.req?.viewToken ??
+    getCachedViewToken(source);
+
+  try {
+    const viewUrl = getters.isShare()
+      ? getViewURL(
+          source,
+          resolvedPath,
+          viewToken,
+          {
+            path: state.shareInfo.subPath,
+            hash: state.shareInfo.hash,
+          },
+          false,
+          resolvedPath,
+        )
+      : getViewURL(source, resolvedPath, viewToken, null, false, resolvedPath);
+    return viewUrl ?? href;
+  } catch {
+    return href;
+  }
+}
+
+function shouldRewriteLinkHref(element: Element): boolean {
+  const rel = (element.getAttribute("rel") ?? "stylesheet").toLowerCase();
+  return rel.split(/\s+/).some((token) => REWRITABLE_LINK_RELS.has(token));
+}
+
+function rewriteAttribute(
+  element: Element,
+  attribute: string,
+  baseFilePath: string,
+  source: string,
+): void {
+  const value = element.getAttribute(attribute);
+  if (!value) {
+    return;
+  }
+  element.setAttribute(attribute, buildPreviewResourceUrl(value, baseFilePath, source));
+}
+
+export function rewriteSrcset(
+  srcset: string,
+  baseFilePath: string,
+  source: string,
+): string {
+  return srcset
+    .split(",")
+    .map((part) => {
+      const trimmed = part.trim();
+      if (!trimmed) {
+        return "";
+      }
+      const spaceIndex = trimmed.search(/\s/);
+      const url = spaceIndex === -1 ? trimmed : trimmed.slice(0, spaceIndex);
+      const descriptor = spaceIndex === -1 ? "" : trimmed.slice(spaceIndex + 1).trim();
+      const rewrittenUrl = buildPreviewResourceUrl(url, baseFilePath, source);
+      return descriptor ? `${rewrittenUrl} ${descriptor}` : rewrittenUrl;
+    })
+    .filter(Boolean)
+    .join(", ");
+}
+
+export function rewriteCssContent(
+  css: string,
+  baseFilePath: string,
+  source: string,
+): string {
+  let result = css.replace(CSS_URL_PATTERN, (_match, quote: string, url: string) => {
+    const rewritten = buildPreviewResourceUrl(url.trim(), baseFilePath, source);
+    return `url(${quote}${rewritten}${quote})`;
+  });
+  result = result.replace(CSS_IMPORT_URL_PATTERN, (_match, url: string) => {
+    const rewritten = buildPreviewResourceUrl(url.trim(), baseFilePath, source);
+    return `@import url(${rewritten})`;
+  });
+  result = result.replace(CSS_IMPORT_STRING_PATTERN, (_match, url: string) => {
+    const rewritten = buildPreviewResourceUrl(url.trim(), baseFilePath, source);
+    return `@import "${rewritten}"`;
+  });
+  return result;
+}
+
+function blockUnsafeUriAttributes(
+  _node: Element,
+  data: { attrName: string; attrValue: string; keepAttr: boolean },
+): void {
+  if (data.attrName !== "href" && data.attrName !== "src" && data.attrName !== "xlink:href") {
+    return;
+  }
+  const value = data.attrValue.trim();
+  if (!/^[a-z][a-z0-9+.-]*:/i.test(value)) {
+    return;
+  }
+  if (!ALLOWED_ABSOLUTE_URI_PATTERN.test(value)) {
+    data.keepAttr = false;
+  }
+}
+
+export function rewriteHtmlResources(
+  doc: Document,
+  baseFilePath: string,
+  source: string,
+): void {
+  for (const [tag, attribute] of RESOURCE_ATTRIBUTES) {
+    for (const element of doc.querySelectorAll(tag)) {
+      if (!element.hasAttribute(attribute)) {
+        continue;
+      }
+      if (tag === "link" && !shouldRewriteLinkHref(element)) {
+        continue;
+      }
+      if (tag === "a") {
+        const href = element.getAttribute("href");
+        if (!href || !isLocalResourceReference(href)) {
+          continue;
+        }
+      }
+      rewriteAttribute(element, attribute, baseFilePath, source);
+    }
+  }
+
+  for (const element of doc.querySelectorAll("img[srcset], source[srcset]")) {
+    const srcset = element.getAttribute("srcset");
+    if (srcset) {
+      element.setAttribute("srcset", rewriteSrcset(srcset, baseFilePath, source));
+    }
+  }
+}
+
+export function rewriteDocumentStyles(
+  doc: Document,
+  baseFilePath: string,
+  source: string,
+): void {
+  for (const styleEl of doc.querySelectorAll("style")) {
+    const css = styleEl.textContent;
+    if (css) {
+      styleEl.textContent = rewriteCssContent(css, baseFilePath, source);
+    }
+  }
+
+  for (const element of doc.querySelectorAll("[style]")) {
+    const style = element.getAttribute("style");
+    if (style) {
+      element.setAttribute("style", rewriteCssContent(style, baseFilePath, source));
+    }
+  }
+}
+
+function navigationGuard(htmlEl: HTMLElement): string {
+  const doc = htmlEl.ownerDocument;
+  const head = doc.head ?? htmlEl.querySelector("head");
+  if (head) {
+    const base = doc.createElement("base");
+    base.setAttribute("href", "about:blank");
+    head.insertBefore(base, head.firstChild);
+
+    const guard = doc.createElement("script");
+    if (typeof globalVars.cspNonce === "string" && globalVars.cspNonce !== "") {
+      guard.setAttribute("nonce", globalVars.cspNonce);
+    }
+    guard.textContent = NAV_GUARD_SCRIPT;
+    head.appendChild(guard);
+  }
+  return `<!DOCTYPE html>\n${htmlEl.outerHTML}`;
+}
+
+export interface HtmlPreview {
+  srcdoc: string;
+}
+
+export function buildHtmlPreview(
+  content: string,
+  filePath: string,
+  source: string,
+): HtmlPreview {
+  const doc = new DOMParser().parseFromString(content, "text/html");
+  rewriteHtmlResources(doc, filePath, source);
+  rewriteDocumentStyles(doc, filePath, source);
+
+  const serialized = `<!DOCTYPE html>\n${doc.documentElement.outerHTML}`;
+
+  DOMPurify.addHook("uponSanitizeAttribute", blockUnsafeUriAttributes);
+  try {
+    const sanitized = DOMPurify.sanitize(serialized, { ...HTML_SANITIZE_CONFIG, RETURN_DOM: true, }) as unknown as HTMLElement;
+    return { srcdoc: navigationGuard(sanitized) };
+  } finally {
+    DOMPurify.removeHook("uponSanitizeAttribute", blockUnsafeUriAttributes);
+  }
+}

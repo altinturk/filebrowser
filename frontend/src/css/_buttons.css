@@ -1,24 +1,33 @@
+/* Material 3 filled button: pill, 40px, accent fill. */
 .button {
-  display:flex;
+  display: flex;
   align-items: center;
   justify-content: center;
+  gap: 8px;
   outline: 0;
-  padding: .5em;
-  border-radius: var(--borderRadius);
-  cursor: pointer;
-  background: var(--primaryColor);
-  color: white;
-  box-shadow: 0 0 5px rgb(0 0 0 / 5%);
-  transition: transform 0.1s ease, opacity 0.1s ease, background-color 0.1s ease;
   min-width: 2em;
-  min-height: 2em;
-  padding-left: 1em;
-  padding-right: 1em;
+  min-height: 40px;
+  padding: 0 24px;
+  border-radius: var(--radius-full);
+  background: var(--primaryColor);
+  color: var(--on-accent);
+  box-shadow: none;
+  font-family: var(--font-display);
+  font-size: 14px;
+  font-weight: 500;
+  letter-spacing: 0.01em;
+  cursor: pointer;
+  transition: box-shadow 0.15s ease, opacity 0.1s ease, background-color 0.1s ease;
+}
+
+.button:hover {
+  box-shadow: var(--elevation-1);
 }
 
 button {
   padding: 0.5em;
   border: none;
+  font-family: inherit;
   background-color: var(--surfaceSecondary);
   transition: background-color 0.3s;
   min-width: 2em;
@@ -48,13 +57,18 @@ button:disabled {
   background: var(--blue);
 }
 
+/* Material 3 text button. */
 .button--flat {
   color: var(--primaryColor);
-  background: var(--surfaceSecondary);
-  box-shadow: 0 0 0;
-  text-transform: uppercase;
-  padding-left: 1em;
-  padding-right: 1em;
+  background: transparent;
+  box-shadow: none;
+  padding-left: 12px;
+  padding-right: 12px;
+}
+
+.button--flat:hover {
+  box-shadow: none;
+  background-color: color-mix(in srgb, var(--primaryColor) 8%, transparent);
 }
 
 .button--flat.button--red {

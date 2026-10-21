@@ -63,12 +63,9 @@ test("source info icon shows tooltip without navigating", async ({ page, checkFo
     checkForErrors();
 });
 
-test("navigation mode has no source card", async ({ page, checkForErrors }) => {
+test("folder tree is shown under the links without a source card", async ({ page, checkForErrors }) => {
     await page.goto("/files/");
     await expect(page).toHaveTitle("Graham's Filebrowser - Files - playwright-files");
-
-    // Icon-mode ToggleSwitch keeps the checkbox visually hidden; click the visible track.
-    await page.locator(".sidebar-mode-toggle label.switch").click();
 
     await expect(page.locator(".navigation-source-card")).toHaveCount(0);
     await expect(page.locator(".file-tree-container")).toBeVisible();
@@ -131,7 +128,8 @@ test("docker source link goes to /files/docker; home returns to playwright + fil
     await dockerLink.click();
     await expect(page).toHaveURL(/\/files\/docker\/?$/);
 
-    await page.getByLabel("Navigate Home").click();
+    // The app-bar brand returns to the default files location.
+    await page.locator("a.app-brand").click();
 
     await expect(page).toHaveTitle("Graham's Filebrowser - Files - playwright-files");
     await expect(
